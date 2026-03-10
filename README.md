@@ -1,5 +1,21 @@
 # fml-witty-pandas
 
+# TO DO LIST
+Project description below. Here is our TO-DO list
+
+Right now, I think a good goal would be to have done by March 30th:
+
+1) A working embedding and retrival system for relevant papers
+2) A little web-demo that does it
+
+| Task | Person | Notes |
+|-----|-----|-----|
+| make the .csv for the papers search and add embeddings | Massimo | I will finish first week after Spring Break|
+| build retrivial pipeline | Massimo | I will finish first week after Spring Break |
+| put together proof of concept for presentation | Everyone | Due week of March 30th |
+| decide on web app | TBD | Due week of March 30th (if we want to showcase that) |
+| make a little web mockup for the proof of concept | TBD | Also due week of March 30th (if we want to showcase that) |
+
 # Student Research Helper
 
 A tool that helps students explore academic research opportunities by recommending relevant resources based on a short description of a research idea.
