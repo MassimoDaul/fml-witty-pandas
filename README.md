@@ -1,20 +1,14 @@
 # fml-witty-pandas
 
 # TO DO LIST
-Project description below. Here is our TO-DO list
-
-Right now, I think a good goal would be to have done by March 30th:
-
-1) A working embedding and retrival system for relevant papers
-2) A little web-demo that does it
 
 | Task | Person | Notes |
 |-----|-----|-----|
-| make the .csv for the papers search and add embeddings | Massimo | I will finish first week after Spring Break|
-| build retrivial pipeline | Massimo | I will finish first week after Spring Break |
-| put together proof of concept for presentation | Everyone | Due week of March 30th |
-| decide on web app | TBD | Due week of March 30th (if we want to showcase that) |
-| make a little web mockup for the proof of concept | TBD | Also due week of March 30th (if we want to showcase that) |
+| test search API for papers |  |  |
+| setup embedding + search for authors attached to papers |  | eventually this embedding process should be combined with the papers (embed paper -> search for author -> embed author if necessary) |
+| improve web app search UI |  | web app can be rebuilt with another framework (e.g. Vite+React, Next JS); consider extracting db schema out of papers/setup_db.sql into jsonschema file |
+| design more helpful data visualizations & interfaces |  | sequential time view of papers? paper reference tree/graph? |
+| brainstorm one algorithm to implement by hand |  | embedding -> nomic, search -> pgvector |
 
 # Student Research Helper
 
@@ -81,15 +75,8 @@ Output:
 
 ## Project Structure
 
-
 TBD
 
+---
 
-## Next Steps
-
-1. Collect datasets
-2. Clean and normalize text fields
-3. Generate embeddings
-4. Implement nearest neighbor search
-5. Build simple user interface demo
-6. Evaluate retrieval quality
+Thank you to arXiv for use of its open access interoperability.
