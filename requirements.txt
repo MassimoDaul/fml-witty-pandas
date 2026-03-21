@@ -1,0 +1,15 @@
+# papers retrieval
+sentence-transformers>=3.0.0
+torch
+psycopg2-binary
+pgvector
+python-dotenv
+tqdm
+kaggle
+einops
+
+# web app
+fastapi
+uvicorn[standard]
+jinja2
+python-multipart

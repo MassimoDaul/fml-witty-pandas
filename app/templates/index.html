@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Paper Search</title>
+  <script src="https://unpkg.com/htmx.org@2.0.4" integrity="sha384-HGfztofotfshcF7+8n44JQL2oJmowVChPTg48S+jvZoztPfvwD79OC/LTtG6dMp+" crossorigin="anonymous"></script>
+  <style>
+    body { font-family: sans-serif; max-width: 800px; margin: 2rem auto; padding: 0 1rem; }
+    form { display: flex; gap: 0.5rem; align-items: center; margin-bottom: 1.5rem; }
+    input[name="query"] { flex: 1; padding: 0.4rem; }
+    input[name="k"] { width: 4rem; padding: 0.4rem; }
+    .htmx-indicator { opacity: 0; transition: opacity 200ms; }
+    .htmx-request .htmx-indicator, .htmx-request.htmx-indicator { opacity: 1; }
+  </style>
+</head>
+<body>
+  <h2>Paper Search</h2>
+  <form hx-post="/search" hx-target="#results" hx-swap="innerHTML" hx-indicator="#spinner">
+    <input name="query" type="text" placeholder="Query" required autofocus />
+    <input name="k" type="number" value="10" min="1" max="50" placeholder="k" title="Number of results" />
+    <button type="submit">Search</button>
+    <span id="spinner" class="htmx-indicator">searching...</span>
+  </form>
+  <div id="results"></div>
+</body>
+</html>

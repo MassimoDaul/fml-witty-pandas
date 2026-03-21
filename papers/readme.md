@@ -74,28 +74,17 @@ CREATE TABLE papers (
 
 ---
 
-## File Structure
-
-```
-papers/
-├── run.py          Ingest pipeline CLI
-├── query.py        KNN search CLI
-├── setup_db.sql    Schema (run once in Supabase SQL editor)
-├── requirements.txt
-└── ingest/
-    ├── config.py       Paths, batch sizes, model name
-    ├── clean.py        LaTeX stripping, embed input builder
-    ├── embed.py        Model load and batched encode
-    ├── db.py           Postgres connection, upsert, index build
-    ├── checkpoint.py   Resume support per offset
-    └── pipeline.py     Main ingest loop
-```
-
----
-
 ## Setup
 
+Use the shared venv at the repo root (covers both `papers/` and `app/`):
+
 ```bash
+# from repo root
+python -m venv venv
+
+venv\Scripts\activate        # Windows
+source venv/bin/activate     # macOS/Linux
+
 pip install -r requirements.txt
 ```
 
