@@ -5,7 +5,8 @@ from tqdm import tqdm
 from .clean import build_embed_input
 from .embed import embed_texts, load_model
 from .checkpoint import read_checkpoint, write_checkpoint
-from .db import get_connection, upsert_papers
+from .db import get_connection, upsert_papers, upsert_authors
+from .authors import collect_author_paper_pairs
 from .config import ARXIV_JSON, DB_BATCH
 
 
@@ -97,6 +98,8 @@ def run(qty: int, offset: int) -> None:
             record["embedding"] = emb
         inserted = upsert_papers(conn, pending)
         total_inserted += inserted
+        pairs = collect_author_paper_pairs(pending)
+        upsert_authors(conn, pairs)
         write_checkpoint(offset, up_to_line)
         pending.clear()
 
