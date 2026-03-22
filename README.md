@@ -5,7 +5,6 @@
 | Task | Person | Notes |
 |-----|-----|-----|
 | test search API for papers |  |  |
-| setup embedding + search for authors attached to papers |  | eventually this embedding process should be combined with the papers (embed paper -> search for author -> embed author if necessary) |
 | improve web app search UI |  | web app can be rebuilt with another framework (e.g. Vite+React, Next JS); consider extracting db schema out of papers/setup_db.sql into jsonschema file |
 | design more helpful data visualizations & interfaces |  | sequential time view of papers? paper reference tree/graph? |
 | brainstorm one algorithm to implement by hand |  | embedding -> nomic, search -> pgvector |
