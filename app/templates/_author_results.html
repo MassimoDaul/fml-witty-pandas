@@ -1,0 +1,23 @@
+{% if not results %}
+<p>No authors found.</p>
+{% else %}
+{% for a in results %}
+<div style="margin-bottom: 1.2rem;">
+  <strong>{{ a.name }}</strong>
+  <small>&mdash; {{ a.paper_count }} paper{{ 's' if a.paper_count != 1 else '' }}</small>
+  <ul style="margin: 0.3rem 0 0; padding-left: 1.2rem; font-size: 0.9em;">
+    {% for p in (a.papers or [])[:5] %}
+    <li>
+      <a href="https://arxiv.org/abs/{{ p.arxiv_id }}" target="_blank">{{ p.title }}</a>
+      <small>({{ p.published or '-' }})</small>
+    </li>
+    {% endfor %}
+    {% if (a.papers or []) | length > 5 %}
+    <li><em>+{{ (a.papers | length) - 5 }} more</em></li>
+    {% endif %}
+  </ul>
+</div>
+<hr>
+{% endfor %}
+<p><small>{{ results | length }} author{{ 's' if results | length != 1 else '' }} matched</small></p>
+{% endif %}

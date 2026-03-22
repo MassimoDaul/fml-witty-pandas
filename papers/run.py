@@ -63,13 +63,52 @@ def cmd_build_index(args) -> None:
     conn.close()
 
 
+def cmd_backfill_authors(args) -> None:
+    from tqdm import tqdm
+    from ingest.db import get_connection, upsert_authors
+    from ingest.config import DB_BATCH
+
+    conn = get_connection()
+    print("Loading authors from papers table...")
+
+    with conn.cursor() as cur:
+        cur.execute(
+            "SELECT arxiv_id, authors FROM papers WHERE authors IS NOT NULL AND array_length(authors, 1) > 0"
+        )
+        rows = cur.fetchall()
+
+    print(f"Found {len(rows):,} papers with authors. Building pairs...")
+
+    pairs: list[tuple[str, str]] = []
+    for arxiv_id, authors in rows:
+        for name in authors:
+            if name:
+                pairs.append((name, arxiv_id))
+
+    print(f"Total author-paper pairs: {len(pairs):,}")
+
+    total_affected = 0
+    with tqdm(total=len(pairs), unit="pair", desc="Upserting authors") as pbar:
+        for i in range(0, len(pairs), DB_BATCH):
+            batch = pairs[i : i + DB_BATCH]
+            affected = upsert_authors(conn, batch)
+            total_affected += affected
+            pbar.update(len(batch))
+
+    conn.close()
+    print(f"\nDone. Author rows affected: {total_affected:,}")
+
+
 def cmd_verify(args) -> None:
-    from ingest.db import get_connection, get_counts
+    from ingest.db import get_connection, get_counts, get_author_counts
     conn = get_connection()
     counts = get_counts(conn)
+    author_counts = get_author_counts(conn)
     conn.close()
-    print(f"Total papers:        {counts['total']:,}")
-    print(f"Missing embeddings:  {counts['missing_embeddings']:,}")
+    print(f"Total papers:             {counts['total']:,}")
+    print(f"Missing embeddings:       {counts['missing_embeddings']:,}")
+    print(f"Total authors:            {author_counts['total_authors']:,}")
+    print(f"Author-paper links:       {author_counts['total_author_paper_links']:,}")
 
 
 # ---------------------------------------------------------------------------
@@ -102,6 +141,7 @@ def main() -> None:
 
     sub.add_parser("build-index", help="Build HNSW index after ingest is complete")
     sub.add_parser("verify", help="Print row counts from DB")
+    sub.add_parser("backfill-authors", help="Populate authors table from existing papers (run once)")
 
     args = parser.parse_args()
 
@@ -111,6 +151,7 @@ def main() -> None:
         "ingest": cmd_ingest,
         "build-index": cmd_build_index,
         "verify": cmd_verify,
+        "backfill-authors": cmd_backfill_authors,
     }
     dispatch[args.command](args)
 

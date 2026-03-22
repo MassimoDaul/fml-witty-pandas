@@ -8,6 +8,7 @@ from fastapi import FastAPI, Form, Request
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from query import search, embed_query
+from author_query import search_by_name
 from ingest.config import POSTGRES_CONN_STRING
 import psycopg2
 from pgvector.psycopg2 import register_vector
@@ -34,9 +35,14 @@ def index(request: Request):
 
 
 @app.post("/search", response_class=HTMLResponse)
-def do_search(request: Request, query: str = Form(...), k: int = Form(10)):
+def do_search(request: Request, query: str = Form(...), k: int = Form(10), type: str = Form("papers")):
     k = max(1, min(k, 50))
     try:
+        if type == "authors":
+            results = search_by_name(query, k=k, conn=request.app.state.conn)
+            return templates.TemplateResponse(
+                "_author_results.html", {"request": request, "results": results}
+            )
         results = search(query, k=k, conn=request.app.state.conn)
     except Exception as e:
         return HTMLResponse(f'<p style="color:red">Error: {e}</p>', status_code=500)

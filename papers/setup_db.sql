@@ -17,3 +17,9 @@ CREATE TABLE IF NOT EXISTS papers (
 -- CREATE INDEX papers_embedding_hnsw_idx
 --     ON papers USING hnsw (embedding vector_cosine_ops)
 --     WITH (m = 16, ef_construction = 128);
+
+CREATE TABLE IF NOT EXISTS authors (
+    name        TEXT PRIMARY KEY,
+    papers      TEXT[] NOT NULL DEFAULT '{}',  -- arxiv_ids of their papers
+    inserted_at TIMESTAMPTZ DEFAULT now()
+);

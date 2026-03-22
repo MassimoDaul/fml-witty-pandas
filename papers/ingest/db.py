@@ -73,6 +73,50 @@ def build_hnsw_index(conn) -> None:
     print("Index built.")
 
 
+def upsert_authors(conn, pairs: list[tuple[str, str]]) -> int:
+    """
+    Insert/update authors from (name, arxiv_id) pairs.
+    On conflict, appends new arxiv_ids and deduplicates the papers array.
+    Returns number of rows affected.
+    """
+    if not pairs:
+        return 0
+
+    # Group by author name
+    by_name: dict[str, list[str]] = {}
+    for name, arxiv_id in pairs:
+        by_name.setdefault(name, []).append(arxiv_id)
+
+    data = [(name, ids) for name, ids in by_name.items()]
+
+    with conn.cursor() as cur:
+        execute_values(
+            cur,
+            """
+            INSERT INTO authors (name, papers)
+            VALUES %s
+            ON CONFLICT (name) DO UPDATE
+                SET papers = (
+                    SELECT array_agg(DISTINCT x)
+                    FROM unnest(authors.papers || EXCLUDED.papers) x
+                )
+            """,
+            data,
+        )
+        affected = cur.rowcount
+    conn.commit()
+    return affected
+
+
+def get_author_counts(conn) -> dict:
+    with conn.cursor() as cur:
+        cur.execute("SELECT COUNT(*) FROM authors")
+        total_authors = cur.fetchone()[0]
+        cur.execute("SELECT COALESCE(SUM(array_length(papers, 1)), 0) FROM authors")
+        total_links = cur.fetchone()[0]
+    return {"total_authors": total_authors, "total_author_paper_links": total_links}
+
+
 def get_counts(conn) -> dict:
     with conn.cursor() as cur:
         cur.execute("SELECT COUNT(*) FROM papers")
