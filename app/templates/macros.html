@@ -1,0 +1,5 @@
+{% macro authors_line(authors) %}
+  {%- if authors -%}
+    {{ authors[:3] | join(", ") }}{% if authors | length > 3 %} +{{ authors | length - 3 }} more{% endif %}
+  {%- endif -%}
+{% endmacro %}

@@ -80,7 +80,14 @@ def related_search(title: str, abstract: str, k: int = 8, exclude_id: str = "", 
     return [dict(zip(cols, row)) for row in rows]
 
 
-def search(query: str, k: int = DEFAULT_K, conn=None) -> list[dict]:
+def search(
+    query: str,
+    k: int = DEFAULT_K,
+    conn=None,
+    categories: list[str] | None = None,
+    year_from: int | None = None,
+    year_to: int | None = None,
+) -> list[dict]:
     """
     Return the k most similar papers to query.
 
@@ -94,23 +101,38 @@ def search(query: str, k: int = DEFAULT_K, conn=None) -> list[dict]:
 
     embedding = embed_query(query)
 
+    where_clauses = []
+    where_params: list = []
+    if categories:
+        where_clauses.append("categories && %s::text[]")
+        where_params.append(categories)
+    if year_from is not None:
+        where_clauses.append("EXTRACT(YEAR FROM published) >= %s")
+        where_params.append(year_from)
+    if year_to is not None:
+        where_clauses.append("EXTRACT(YEAR FROM published) <= %s")
+        where_params.append(year_to)
+
+    where_sql = ("WHERE " + " AND ".join(where_clauses)) if where_clauses else ""
+
+    sql = f"""
+        SELECT
+            arxiv_id,
+            title,
+            abstract,
+            categories,
+            authors,
+            published,
+            1 - (embedding <=> %s::vector) AS similarity
+        FROM papers
+        {where_sql}
+        ORDER BY embedding <=> %s::vector
+        LIMIT %s
+    """
+    params = [embedding] + where_params + [embedding, k]
+
     with conn.cursor() as cur:
-        cur.execute(
-            """
-            SELECT
-                arxiv_id,
-                title,
-                abstract,
-                categories,
-                authors,
-                published,
-                1 - (embedding <=> %s::vector) AS similarity
-            FROM papers
-            ORDER BY embedding <=> %s::vector
-            LIMIT %s
-            """,
-            (embedding, embedding, k),
-        )
+        cur.execute(sql, params)
         rows = cur.fetchall()
         cols = [desc[0] for desc in cur.description]
 
