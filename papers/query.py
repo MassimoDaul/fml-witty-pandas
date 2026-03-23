@@ -35,6 +35,51 @@ def embed_query(text: str) -> list[float]:
     return vector.tolist()
 
 
+def embed_document(title: str, abstract: str) -> list[float]:
+    global _model
+    if _model is None:
+        _model = load_model()
+    prompt = f"search_document: {clean_text(title)}. {clean_text(abstract)}"
+    vector = _model.encode(prompt, normalize_embeddings=True)
+    return vector.tolist()
+
+
+def related_search(title: str, abstract: str, k: int = 8, exclude_id: str = "", conn=None) -> list[dict]:
+    """Return the k most similar papers to the given title+abstract, excluding exclude_id."""
+    close_after = conn is None
+    if conn is None:
+        conn = psycopg2.connect(POSTGRES_CONN_STRING)
+        register_vector(conn)
+
+    embedding = embed_document(title, abstract)
+
+    with conn.cursor() as cur:
+        cur.execute(
+            """
+            SELECT
+                arxiv_id,
+                title,
+                abstract,
+                categories,
+                authors,
+                published,
+                1 - (embedding <=> %s::vector) AS similarity
+            FROM papers
+            WHERE arxiv_id != %s
+            ORDER BY embedding <=> %s::vector
+            LIMIT %s
+            """,
+            (embedding, exclude_id, embedding, k),
+        )
+        rows = cur.fetchall()
+        cols = [desc[0] for desc in cur.description]
+
+    if close_after:
+        conn.close()
+
+    return [dict(zip(cols, row)) for row in rows]
+
+
 def search(query: str, k: int = DEFAULT_K, conn=None) -> list[dict]:
     """
     Return the k most similar papers to query.

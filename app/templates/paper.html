@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>{{ paper.title }}</title>
+  <script src="https://unpkg.com/htmx.org@2.0.4" integrity="sha384-HGfztofotfshcF7+8n44JQL2oJmowVChPTg48S+jvZoztPfvwD79OC/LTtG6dMp+" crossorigin="anonymous"></script>
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <style>
+    body { font-family: sans-serif; max-width: 960px; margin: 2rem auto; padding: 0 1rem; }
+    a.back { display: inline-block; margin-bottom: 1rem; color: #555; text-decoration: none; }
+    a.back:hover { text-decoration: underline; }
+    #graph-wrap { border: 1px solid #e5e7eb; border-radius: 6px; background: #fafafa; margin-top: 1rem; position: relative; overflow: hidden; }
+    #graph { width: 100%; height: 560px; display: block; }
+    #graph-status { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #6b7280; margin: 0; }
+    .legend { display: flex; gap: 1.5rem; margin-top: 0.6rem; font-size: 0.8em; color: #555; flex-wrap: wrap; }
+    .legend-item { display: flex; align-items: center; gap: 0.35rem; }
+    .legend-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
+  </style>
+</head>
+<body>
+  <a href="/" class="back">← Back to search</a>
+  <h2>{{ paper.title }}</h2>
+  <p>
+    <small>
+      {% if paper.authors %}
+        {{ paper.authors[:3] | join(", ") }}{% if paper.authors | length > 3 %} +{{ paper.authors | length - 3 }} more{% endif %} &mdash;
+      {% endif %}
+      {{ paper.categories | join(", ") }} | {{ paper.published or "–" }}
+      &nbsp;·&nbsp;
+      <a href="https://arxiv.org/abs/{{ paper.arxiv_id }}" target="_blank">arXiv:{{ paper.arxiv_id }}</a>
+    </small>
+  </p>
+  <p style="font-size: 0.95em; color: #333; margin-top: 0.5rem;">{{ paper.abstract }}</p>
+
+  <h3 style="margin-top: 1.5rem;">Reference Graph</h3>
+  <div id="graph-wrap">
+    <p id="graph-status">Loading from Semantic Scholar…</p>
+    <div id="tooltip" style="position:absolute;display:none;background:#fff;border:1px solid #e5e7eb;border-radius:4px;padding:6px 10px;font-size:11px;max-width:280px;pointer-events:none;box-shadow:0 2px 6px rgba(0,0,0,0.1);line-height:1.5;z-index:10;"></div>
+    <svg id="graph"
+      data-arxiv-id="{{ paper.arxiv_id }}"
+      data-title="{{ paper.title }}"
+      data-year="{{ paper.published[:4] if paper.published else '' }}">
+    </svg>
+  </div>
+  <div class="legend">
+    <div class="legend-item">
+      <div class="legend-dot" style="background:#f59e0b; width:16px; height:16px;"></div> This paper
+    </div>
+    <div class="legend-item">
+      <div class="legend-dot" style="background:#3b82f6;"></div> In local database — click to open
+    </div>
+    <div class="legend-item">
+      <div class="legend-dot" style="background:#9ca3af;"></div> arXiv only — click to open on arXiv
+    </div>
+    <div class="legend-item">
+      <div class="legend-dot" style="background:#e5e7eb; border:1px solid #9ca3af;"></div> No arXiv ID
+    </div>
+  </div>
+
+  <h3 style="margin-top: 2rem;">Related Papers</h3>
+  <div hx-get="/paper/{{ paper.arxiv_id }}/related"
+       hx-trigger="load"
+       hx-swap="innerHTML">
+    <p style="color:#6b7280;">Finding related papers…</p>
+  </div>
+
+  <script>
+    const svgEl = document.getElementById("graph");
+    const arxivId = svgEl.dataset.arxivId;
+    const centerTitle = svgEl.dataset.title;
+    const centerYear  = parseInt(svgEl.dataset.year) || null;
+
+    fetch(`/api/paper/${arxivId}/references`)
+      .then(r => r.json())
+      .then(data => {
+        const statusEl = document.getElementById("graph-status");
+        if (data.error) {
+          statusEl.textContent = data.error;
+          return;
+        }
+        if (data.nodes.length <= 1) {
+          statusEl.textContent = "No references found.";
+          return;
+        }
+        statusEl.remove();
+        const center = data.nodes.find(n => n.is_center);
+        if (center) { center.title = centerTitle; center.year = centerYear; }
+        renderGraph(data.nodes, data.links);
+      })
+      .catch(() => {
+        document.getElementById("graph-status").textContent = "Failed to load references.";
+      });
+
+    const tooltip = document.getElementById("tooltip");
+    const graphWrap = document.getElementById("graph-wrap");
+
+    function positionTooltip(e) {
+      const rect = graphWrap.getBoundingClientRect();
+      let x = e.clientX - rect.left + 14;
+      let y = e.clientY - rect.top - 10;
+      if (x + 295 > rect.width) x = e.clientX - rect.left - 295;
+      tooltip.style.left = x + "px";
+      tooltip.style.top  = y + "px";
+    }
+
+    function renderGraph(nodes, links) {
+      const margin = { top: 20, right: 30, bottom: 36, left: 30 };
+      const W = svgEl.clientWidth || 900;
+      const H = 560;
+
+      // Year scale — x axis always extends to current year
+      const CURRENT_YEAR = 2026;
+      const years = nodes.map(d => d.year).filter(Boolean);
+      const minYear = d3.min(years) ?? 2000;
+      const xScale = d3.scaleLinear()
+        .domain([minYear - 0.5, CURRENT_YEAR + 0.5])
+        .range([margin.left + 10, W - margin.right - 10]);
+
+      // Citation count → node radius
+      const maxCit = d3.max(nodes.filter(d => !d.is_center), d => d.citation_count ?? 0) || 1;
+      const rScale = d3.scaleSqrt().domain([0, maxCit]).range([4, 18]).clamp(true);
+
+      const svg = d3.select("#graph")
+        .attr("viewBox", `0 0 ${W} ${H}`)
+        .style("cursor", "grab");
+
+      const g = svg.append("g");
+
+      svg.call(
+        d3.zoom().scaleExtent([0.15, 5])
+          .on("zoom", e => g.attr("transform", e.transform))
+      );
+
+      const yearSpan = CURRENT_YEAR - minYear + 1;
+
+      // Vertical year gridlines
+      g.append("g").attr("opacity", 0.5)
+        .selectAll("line")
+        .data(xScale.ticks(Math.min(yearSpan, 14)))
+        .join("line")
+        .attr("x1", d => xScale(d)).attr("x2", d => xScale(d))
+        .attr("y1", margin.top).attr("y2", H - margin.bottom)
+        .attr("stroke", "#e5e7eb")
+        .attr("stroke-width", 1);
+
+      // X-axis
+      g.append("g")
+        .attr("transform", `translate(0,${H - margin.bottom})`)
+        .call(
+          d3.axisBottom(xScale)
+            .ticks(Math.min(yearSpan, 14))
+            .tickFormat(d3.format("d"))
+        )
+        .call(ax => ax.select(".domain").attr("stroke", "#d1d5db"))
+        .call(ax => ax.selectAll("text").attr("fill", "#6b7280").attr("font-size", "10px"))
+        .call(ax => ax.selectAll(".tick line").attr("stroke", "#d1d5db"));
+
+      const simulation = d3.forceSimulation(nodes)
+        .force("link", d3.forceLink(links).id(d => d.id).distance(80).strength(0.3))
+        .force("charge", d3.forceManyBody().strength(-150))
+        .force("x", d3.forceX(d => d.year ? xScale(d.year) : W / 2).strength(d => d.year ? 0.8 : 0.05))
+        .force("y", d3.forceY((H - margin.bottom + margin.top) / 2).strength(0.08))
+        .force("collide", d3.forceCollide(d => d.is_center ? 20 : rScale(d.citation_count ?? 0) + 5));
+
+      const link = g.append("g")
+        .attr("stroke", "#d1d5db")
+        .attr("stroke-width", 1)
+        .selectAll("line")
+        .data(links)
+        .join("line");
+
+      const nodeG = g.append("g")
+        .selectAll("g")
+        .data(nodes)
+        .join("g")
+        .attr("cursor", d => (!d.is_center && (d.in_db || d.arxiv_id)) ? "pointer" : "default")
+        .on("click", (e, d) => {
+          if (d.is_center) return;
+          if (d.in_db) { window.location.href = `/paper/${d.arxiv_id}`; return; }
+          if (d.arxiv_id) { window.open(`https://arxiv.org/abs/${d.arxiv_id}`, "_blank"); }
+        })
+        .on("mouseenter", (e, d) => {
+          const lines = [`<strong>${d.title}</strong>`];
+          if (d.year) lines.push(`Year: ${d.year}`);
+          if (d.citation_count != null) lines.push(`Citations: ${d.citation_count.toLocaleString()}`);
+          if (d.authors && d.authors.length) lines.push(d.authors.join(", "));
+          lines.push(d.is_center ? "This paper" : d.in_db ? "In local database" : d.arxiv_id ? "arXiv only" : "No arXiv ID");
+          tooltip.innerHTML = lines.join("<br>");
+          tooltip.style.display = "block";
+          positionTooltip(e);
+        })
+        .on("mousemove", positionTooltip)
+        .on("mouseleave", () => { tooltip.style.display = "none"; })
+        .call(
+          d3.drag()
+            .on("start", (e, d) => { if (!e.active) simulation.alphaTarget(0.3).restart(); d.fx = d.x; d.fy = d.y; })
+            .on("drag",  (e, d) => { d.fx = e.x; d.fy = e.y; })
+            .on("end",   (e, d) => { if (!e.active) simulation.alphaTarget(0); d.fx = null; d.fy = null; })
+        );
+
+      nodeG.append("circle")
+        .attr("r", d => d.is_center ? 16 : rScale(d.citation_count ?? 0))
+        .attr("fill", d => {
+          if (d.is_center) return "#f59e0b";
+          if (d.in_db)     return "#3b82f6";
+          if (d.arxiv_id)  return "#9ca3af";
+          return "#e5e7eb";
+        })
+        .attr("stroke", "#fff")
+        .attr("stroke-width", 1.5);
+
+      // Label only the center node
+      nodeG.filter(d => d.is_center)
+        .append("text")
+        .text(d => { const t = d.title || ""; return t.length > 40 ? t.slice(0, 40) + "…" : t; })
+        .attr("x", 20).attr("y", 4)
+        .attr("font-size", "11px")
+        .attr("font-weight", "600")
+        .attr("fill", "#374151")
+        .attr("pointer-events", "none");
+
+      simulation.on("tick", () => {
+        link
+          .attr("x1", d => d.source.x).attr("y1", d => d.source.y)
+          .attr("x2", d => d.target.x).attr("y2", d => d.target.y);
+        nodeG.attr("transform", d => `translate(${d.x},${d.y})`);
+      });
+    }
+  </script>
+</body>
+</html>
