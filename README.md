@@ -6,6 +6,8 @@
 |-----|-----|-----|
 | test search API for papers |  |  |
 | papers embedding improvements |  | relevant search considerations beyond semantics: "impact"/citations, topics (e.g. currently searching for "attention is all you need" returns astrophysics papers) |
+| add authors to semantic search |  | have to meaningfully embed authors in the same space as papers somehow (combine embeddings from papers?) |
+| add events/conferences to semantic search |  |  |
 | improve web app search UI |  | web app can be rebuilt with another framework (e.g. Vite+React, Next JS); consider extracting db schema out of papers/setup_db.sql into jsonschema file |
 | design more + improve existing data visualizations |  |  |
 | brainstorm one algorithm to implement by hand |  | e.g. search intent classification (paper? author? event?) |
