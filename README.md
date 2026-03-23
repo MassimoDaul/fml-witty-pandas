@@ -5,9 +5,10 @@
 | Task | Person | Notes |
 |-----|-----|-----|
 | test search API for papers |  |  |
+| papers embedding improvements |  | relevant search considerations beyond semantics: "impact"/citations, topics (e.g. currently searching for "attention is all you need" returns astrophysics papers) |
 | improve web app search UI |  | web app can be rebuilt with another framework (e.g. Vite+React, Next JS); consider extracting db schema out of papers/setup_db.sql into jsonschema file |
-| design more helpful data visualizations & interfaces |  | sequential time view of papers? paper reference tree/graph? |
-| brainstorm one algorithm to implement by hand |  | embedding -> nomic, search -> pgvector |
+| design more + improve existing data visualizations |  |  |
+| brainstorm one algorithm to implement by hand |  | e.g. search intent classification (paper? author? event?) |
 
 # Student Research Helper
 
