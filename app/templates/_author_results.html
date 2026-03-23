@@ -1,14 +1,15 @@
+{% from "macros.html" import authors_line %}
 {% if not results %}
 <p>No authors found.</p>
 {% else %}
 {% for a in results %}
 <div style="margin-bottom: 1.2rem;">
-  <strong>{{ a.name }}</strong>
+  <strong><a href="/author?name={{ a.name | url_encode }}">{{ a.name }}</a></strong>
   <small>&mdash; {{ a.paper_count }} paper{{ 's' if a.paper_count != 1 else '' }}</small>
   <ul style="margin: 0.3rem 0 0; padding-left: 1.2rem; font-size: 0.9em;">
     {% for p in (a.papers or [])[:5] %}
     <li>
-      <a href="https://arxiv.org/abs/{{ p.arxiv_id }}" target="_blank">{{ p.title }}</a>
+      <a href="/paper/{{ p.arxiv_id }}">{{ p.title }}</a>
       <small>({{ p.published or '-' }})</small>
     </li>
     {% endfor %}

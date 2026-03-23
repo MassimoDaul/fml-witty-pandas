@@ -1,0 +1,30 @@
+{% from "macros.html" import authors_line %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Author | {{ name }}</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <a href="/" class="back">← Back to search</a>
+  <h2>{{ name }}</h2>
+  <p><small>{{ papers | length }} paper{{ 's' if papers | length != 1 else '' }} in database</small></p>
+
+  {% for p in papers %}
+  <div class="paper">
+    <a href="/paper/{{ p.arxiv_id }}">{{ p.title }}</a><br>
+    <span class="meta">
+      {% if p.authors %}{{ authors_line(p.authors) }} &mdash;{% endif %}
+      {{ p.categories | join(", ") }} | {{ p.published or "–" }}
+      &nbsp;·&nbsp;
+      <a href="https://arxiv.org/abs/{{ p.arxiv_id }}" target="_blank">arXiv:{{ p.arxiv_id }}</a>
+    </span>
+    <p class="abstract">
+      {{ p.abstract[:300] }}{% if p.abstract | length > 300 %}...{% endif %}
+    </p>
+  </div>
+  <hr>
+  {% endfor %}
+</body>
+</html>

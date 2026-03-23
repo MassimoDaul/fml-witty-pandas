@@ -1,3 +1,4 @@
+{% from "macros.html" import authors_line %}
 {% if not results %}
 <p>No results found.</p>
 {% else %}
@@ -6,9 +7,7 @@
   <strong>#{{ loop.index }} [{{ "%.4f" | format(r.similarity) }}]</strong>
   <a href="/paper/{{ r.arxiv_id }}">{{ r.title }}</a><br>
   <small>
-    {% if r.authors %}
-      {{ r.authors[:3] | join(", ") }}{% if r.authors | length > 3 %} +{{ r.authors | length - 3 }} more{% endif %} &mdash;
-    {% endif %}
+    {% if r.authors %}{{ authors_line(r.authors) }} &mdash;{% endif %}
     {{ r.categories | join(", ") }} | {{ r.published or "-" }}
   </small>
   <p style="margin: 0.3rem 0 0; font-size: 0.9em; color: #333;">

@@ -1,0 +1,62 @@
+/* ── Layout ── */
+body {
+  font-family: sans-serif;
+  max-width: 960px;
+  margin: 2rem auto;
+  padding: 0 1rem;
+}
+
+a.back {
+  display: inline-block;
+  margin-bottom: 1rem;
+  color: #555;
+  text-decoration: none;
+}
+a.back:hover { text-decoration: underline; }
+
+/* ── Search page ── */
+.search-row { display: flex; gap: 0.5rem; align-items: center; margin-bottom: 0.5rem; }
+input[name="query"] { flex: 1; padding: 0.4rem; }
+input[name="k"] { width: 4rem; padding: 0.4rem; }
+
+.htmx-indicator { opacity: 0; transition: opacity 200ms; }
+.htmx-request .htmx-indicator,
+.htmx-request.htmx-indicator { opacity: 1; }
+
+.filters { margin-bottom: 1rem; font-size: 0.9em; color: #555; }
+.filters summary { cursor: pointer; user-select: none; }
+.filters-body { display: flex; gap: 1rem; flex-wrap: wrap; align-items: center; margin-top: 0.5rem; }
+.filters-body label { display: flex; flex-direction: column; gap: 0.2rem; font-size: 0.85em; color: #444; }
+.filters-body input { padding: 0.3rem; }
+.filters-body input[name="categories"] { width: 12rem; }
+.filters-body input[name="year_from"],
+.filters-body input[name="year_to"] { width: 5rem; }
+
+/* ── Author page ── */
+.paper { margin-bottom: 1.2rem; }
+.paper a { font-weight: 600; }
+.paper .meta { font-size: 0.85em; color: #555; }
+.paper .abstract { margin: 0.3rem 0 0; font-size: 0.9em; color: #333; }
+
+/* ── Paper / graph page ── */
+#graph-wrap {
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  background: #fafafa;
+  margin-top: 1rem;
+  position: relative;
+  overflow: hidden;
+}
+#graph { width: 100%; height: 560px; display: block; }
+#graph-status {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: #6b7280;
+  margin: 0;
+}
+
+.legend { display: flex; gap: 1.5rem; margin-top: 0.6rem; font-size: 0.8em; color: #555; flex-wrap: wrap; }
+.legend-item { display: flex; align-items: center; gap: 0.35rem; }
+.legend-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }

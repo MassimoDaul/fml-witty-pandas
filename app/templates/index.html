@@ -4,26 +4,43 @@
   <meta charset="UTF-8">
   <title>Paper Search</title>
   <script src="https://unpkg.com/htmx.org@2.0.4" integrity="sha384-HGfztofotfshcF7+8n44JQL2oJmowVChPTg48S+jvZoztPfvwD79OC/LTtG6dMp+" crossorigin="anonymous"></script>
-  <style>
-    body { font-family: sans-serif; max-width: 800px; margin: 2rem auto; padding: 0 1rem; }
-    form { display: flex; gap: 0.5rem; align-items: center; margin-bottom: 1.5rem; }
-    input[name="query"] { flex: 1; padding: 0.4rem; }
-    input[name="k"] { width: 4rem; padding: 0.4rem; }
-    .htmx-indicator { opacity: 0; transition: opacity 200ms; }
-    .htmx-request .htmx-indicator, .htmx-request.htmx-indicator { opacity: 1; }
-  </style>
+  <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
   <h2>Paper Search</h2>
   <form hx-post="/search" hx-target="#results" hx-swap="innerHTML" hx-indicator="#spinner">
-    <input name="query" id="query" type="text" placeholder="Research topic or author name" required autofocus />
-    <select name="type" onchange="document.getElementById('query').placeholder = this.value === 'authors' ? 'Author name' : 'Research topic'">
-      <option value="papers">Papers</option>
-      <option value="authors">Authors</option>
-    </select>
-    <input name="k" type="number" value="10" min="1" max="50" placeholder="k" title="Number of results" />
-    <button type="submit">Search</button>
-    <span id="spinner" class="htmx-indicator">searching...</span>
+    <div class="search-row">
+      <input name="query" id="query" type="text" placeholder="Research topic or author name" required autofocus />
+      <select name="type" id="type-select" onchange="
+        document.getElementById('query').placeholder = this.value === 'authors' ? 'Author name' : 'Research topic';
+        document.getElementById('paper-filters').style.display = this.value === 'authors' ? 'none' : 'block';
+      ">
+        <option value="papers">Papers</option>
+        <option value="authors">Authors</option>
+      </select>
+      <input name="k" type="number" value="10" min="1" max="50" placeholder="k" title="Number of results" />
+      <button type="submit">Search</button>
+      <span id="spinner" class="htmx-indicator">searching...</span>
+    </div>
+    <div id="paper-filters">
+      <details class="filters">
+        <summary>Filters</summary>
+        <div class="filters-body">
+          <label>
+            Category
+            <input name="categories" type="text" placeholder="e.g. cs.LG cs.AI" title="Space or comma-separated arXiv categories" />
+          </label>
+          <label>
+            Year from
+            <input name="year_from" type="number" placeholder="e.g. 2020" min="1991" max="2099" />
+          </label>
+          <label>
+            Year to
+            <input name="year_to" type="number" placeholder="e.g. 2024" min="1991" max="2099" />
+          </label>
+        </div>
+      </details>
+    </div>
   </form>
   <div id="results"></div>
 </body>
