@@ -28,14 +28,15 @@
       {{ paper.categories | join(", ") }} | {{ paper.published or "–" }}
       &nbsp;·&nbsp;
       <a href="https://arxiv.org/abs/{{ paper.arxiv_id }}" target="_blank">arXiv:{{ paper.arxiv_id }}</a>
+      <span id="paper-ext-ids"></span>
     </small>
   </p>
   <p style="font-size: 0.95em; color: #333; margin-top: 0.5rem;">{{ paper.abstract }}</p>
 
   <h3 style="margin-top: 1.5rem;">Reference Graph</h3>
   <div id="graph-wrap">
-    <p id="graph-status">Loading from Semantic Scholar…</p>
-    <div id="tooltip" style="position:absolute;display:none;background:#fff;border:1px solid #e5e7eb;border-radius:4px;padding:6px 10px;font-size:11px;max-width:280px;pointer-events:none;box-shadow:0 2px 6px rgba(0,0,0,0.1);line-height:1.5;z-index:10;"></div>
+    <p id="graph-status">Loading references and citations from Semantic Scholar…</p>
+    <div id="tooltip" style="position:absolute;display:none;background:#fff;border:1px solid #e5e7eb;border-radius:4px;padding:6px 10px;font-size:11px;max-width:280px;box-shadow:0 2px 6px rgba(0,0,0,0.1);line-height:1.5;z-index:10;"></div>
     <svg id="graph"
       data-arxiv-id="{{ paper.arxiv_id }}"
       data-title="{{ paper.title }}"
@@ -47,13 +48,16 @@
       <div class="legend-dot" style="background:#f59e0b; width:16px; height:16px;"></div> This paper
     </div>
     <div class="legend-item">
-      <div class="legend-dot" style="background:#3b82f6;"></div> In local database — click to open
+      <div class="legend-dot" style="background:#3b82f6;"></div> In local database
     </div>
     <div class="legend-item">
-      <div class="legend-dot" style="background:#9ca3af;"></div> arXiv only — click to open on arXiv
+      <div class="legend-dot" style="background:#9ca3af;"></div> arXiv only
     </div>
     <div class="legend-item">
-      <div class="legend-dot" style="background:#e5e7eb; border:1px solid #9ca3af;"></div> No arXiv ID
+      <svg width="28" height="12" style="flex-shrink:0"><line x1="0" y1="6" x2="20" y2="6" stroke="#f97316" stroke-width="1.5"/><polygon points="20,3 28,6 20,9" fill="#f97316"/></svg> Cites this paper
+    </div>
+    <div class="legend-item">
+      <svg width="28" height="12" style="flex-shrink:0"><line x1="8" y1="6" x2="28" y2="6" stroke="#6b7280" stroke-width="1.5"/><polygon points="0,6 8,3 8,9" fill="#6b7280"/></svg> Referenced by this paper
     </div>
   </div>
 
@@ -70,29 +74,83 @@
     const centerTitle = svgEl.dataset.title;
     const centerYear  = parseInt(svgEl.dataset.year) || null;
 
-    fetch(`/api/paper/${arxivId}/references`)
-      .then(r => r.json())
-      .then(data => {
-        const statusEl = document.getElementById("graph-status");
-        if (data.error) {
-          statusEl.textContent = data.error;
-          return;
+    const EXT_ID_LINKS = {
+      DOI:    id => ({ label: `DOI:${id}`,    href: `https://doi.org/${id}` }),
+      PubMed: id => ({ label: `PubMed:${id}`, href: `https://pubmed.ncbi.nlm.nih.gov/${id}` }),
+      DBLP:   id => ({ label: `DBLP`,         href: `https://dblp.org/rec/${id}` }),
+    };
+
+    function renderExternalIds(paperIds, s2Id) {
+      const el = document.getElementById("paper-ext-ids");
+      if (!el) return;
+      const parts = [];
+      for (const [type, fn] of Object.entries(EXT_ID_LINKS)) {
+        if (paperIds[type]) {
+          const { label, href } = fn(paperIds[type]);
+          parts.push(`<a href="${href}" target="_blank">${label}</a>`);
         }
-        if (data.nodes.length <= 1) {
-          statusEl.textContent = "No references found.";
-          return;
-        }
-        statusEl.remove();
-        const center = data.nodes.find(n => n.is_center);
-        if (center) { center.title = centerTitle; center.year = centerYear; }
-        renderGraph(data.nodes, data.links);
-      })
-      .catch(() => {
-        document.getElementById("graph-status").textContent = "Failed to load references.";
-      });
+      }
+      if (s2Id) {
+        parts.push(`<a href="https://www.semanticscholar.org/paper/${s2Id}" target="_blank">S2</a>`);
+      }
+      if (parts.length) el.innerHTML = " &nbsp;·&nbsp; " + parts.join(" &nbsp;·&nbsp; ");
+    }
+
+    function loadGraph() {
+      const statusEl = document.getElementById("graph-status");
+      statusEl.textContent = "Loading references and citations from Semantic Scholar…";
+
+      fetch(`/api/paper/${arxivId}/references`)
+        .then(r => r.json())
+        .then(data => {
+          if (data.paper_ids || data.s2_paper_id) {
+            renderExternalIds(data.paper_ids || {}, data.s2_paper_id);
+          }
+          if (data.error) {
+            const is429 = data.error.toLowerCase().includes("rate limit");
+            if (is429) {
+              statusEl.innerHTML = `${data.error} &nbsp;<button onclick="loadGraph()" style="font-size:0.85em;padding:2px 10px;cursor:pointer;">Retry</button>`;
+            } else {
+              statusEl.textContent = data.error;
+            }
+            return;
+          }
+          if (data.nodes.length <= 1) {
+            statusEl.textContent = "No references or citations found.";
+            return;
+          }
+          statusEl.remove();
+          const center = data.nodes.find(n => n.is_center);
+          if (center) { center.title = centerTitle; center.year = centerYear; }
+          renderGraph(data.nodes, data.links);
+        })
+        .catch(() => {
+          statusEl.innerHTML = `Failed to load graph. &nbsp;<button onclick="loadGraph()" style="font-size:0.85em;padding:2px 10px;cursor:pointer;">Retry</button>`;
+        });
+    }
+
+    loadGraph();
 
     const tooltip = document.getElementById("tooltip");
     const graphWrap = document.getElementById("graph-wrap");
+    let hideTimer = null;
+    let tooltipFocused = false;
+    let focusedNodeEl = null;
+
+    tooltip.addEventListener("mouseenter", () => clearTimeout(hideTimer));
+    tooltip.addEventListener("mouseleave", () => { if (!tooltipFocused) tooltip.style.display = "none"; });
+    tooltip.addEventListener("click", e => e.stopPropagation());
+
+    document.addEventListener("click", () => {
+      if (tooltipFocused) {
+        tooltipFocused = false;
+        if (focusedNodeEl) {
+          d3.select(focusedNodeEl).select("circle").attr("stroke", "#fff").attr("stroke-width", 1.5);
+          focusedNodeEl = null;
+        }
+        tooltip.style.display = "none";
+      }
+    });
 
     function positionTooltip(e) {
       const rect = graphWrap.getBoundingClientRect();
@@ -101,6 +159,27 @@
       if (x + 295 > rect.width) x = e.clientX - rect.left - 295;
       tooltip.style.left = x + "px";
       tooltip.style.top  = y + "px";
+    }
+
+    function buildTooltip(d) {
+      const lines = [`<strong>${d.title}</strong>`];
+      if (d.year) lines.push(`Year: ${d.year}`);
+      if (d.citation_count != null) lines.push(`Citations: ${d.citation_count.toLocaleString()}`);
+      if (d.authors && d.authors.length) lines.push(d.authors.join(", "));
+      const role = d.is_center ? "This paper"
+        : d.is_citation ? "Cites this paper"
+        : "Referenced by this paper";
+      const loc = d.in_db ? " · In local database" : d.arxiv_id ? " · arXiv only" : "";
+      lines.push(role + loc);
+      const linkParts = [];
+      if (d.arxiv_id) linkParts.push(`<a href="https://arxiv.org/abs/${d.arxiv_id}" target="_blank">arXiv</a>`);
+      const ids = d.ext_ids || {};
+      if (ids.DOI)    linkParts.push(`<a href="https://doi.org/${ids.DOI}" target="_blank">DOI</a>`);
+      if (ids.PubMed) linkParts.push(`<a href="https://pubmed.ncbi.nlm.nih.gov/${ids.PubMed}" target="_blank">PubMed</a>`);
+      if (ids.DBLP)   linkParts.push(`<a href="https://dblp.org/rec/${ids.DBLP}" target="_blank">DBLP</a>`);
+      if (d.s2_id)    linkParts.push(`<a href="https://www.semanticscholar.org/paper/${d.s2_id}" target="_blank">S2</a>`);
+      if (linkParts.length) lines.push(linkParts.join(" · "));
+      return lines.join("<br>");
     }
 
     function renderGraph(nodes, links) {
@@ -162,35 +241,66 @@
         .force("y", d3.forceY((H - margin.bottom + margin.top) / 2).strength(0.08))
         .force("collide", d3.forceCollide(d => d.is_center ? 20 : rScale(d.citation_count ?? 0) + 5));
 
+      // Arrowhead markers
+      const defs = svg.append("defs");
+      defs.append("marker")
+        .attr("id", "arrow-ref")
+        .attr("viewBox", "0 -4 8 8").attr("refX", 8).attr("refY", 0)
+        .attr("markerWidth", 6).attr("markerHeight", 6).attr("orient", "auto")
+        .append("path").attr("d", "M0,-4L8,0L0,4").attr("fill", "#9ca3af");
+      defs.append("marker")
+        .attr("id", "arrow-cite")
+        .attr("viewBox", "0 -4 8 8").attr("refX", 8).attr("refY", 0)
+        .attr("markerWidth", 6).attr("markerHeight", 6).attr("orient", "auto")
+        .append("path").attr("d", "M0,-4L8,0L0,4").attr("fill", "#f97316");
+
       const link = g.append("g")
-        .attr("stroke", "#d1d5db")
-        .attr("stroke-width", 1)
         .selectAll("line")
         .data(links)
-        .join("line");
+        .join("line")
+        .attr("stroke", d => d.is_citation ? "#f97316" : "#9ca3af")
+        .attr("stroke-width", d => d.is_citation ? 1.5 : 1)
+        .attr("stroke-opacity", d => d.is_citation ? 0.7 : 0.5)
+        .attr("marker-end", d => d.is_citation ? "url(#arrow-cite)" : "url(#arrow-ref)");
 
       const nodeG = g.append("g")
         .selectAll("g")
         .data(nodes)
         .join("g")
-        .attr("cursor", d => (!d.is_center && (d.in_db || d.arxiv_id)) ? "pointer" : "default")
+        .attr("cursor", "pointer")
         .on("click", (e, d) => {
-          if (d.is_center) return;
-          if (d.in_db) { window.location.href = `/paper/${d.arxiv_id}`; return; }
-          if (d.arxiv_id) { window.open(`https://arxiv.org/abs/${d.arxiv_id}`, "_blank"); }
-        })
-        .on("mouseenter", (e, d) => {
-          const lines = [`<strong>${d.title}</strong>`];
-          if (d.year) lines.push(`Year: ${d.year}`);
-          if (d.citation_count != null) lines.push(`Citations: ${d.citation_count.toLocaleString()}`);
-          if (d.authors && d.authors.length) lines.push(d.authors.join(", "));
-          lines.push(d.is_center ? "This paper" : d.in_db ? "In local database" : d.arxiv_id ? "arXiv only" : "No arXiv ID");
-          tooltip.innerHTML = lines.join("<br>");
+          e.stopPropagation();
+          const isSame = tooltipFocused && focusedNodeEl === e.currentTarget;
+          // unfocus previous node ring
+          if (focusedNodeEl) {
+            d3.select(focusedNodeEl).select("circle").attr("stroke", "#fff").attr("stroke-width", 1.5);
+          }
+          if (isSame) {
+            tooltipFocused = false;
+            focusedNodeEl = null;
+            tooltip.style.display = "none";
+            return;
+          }
+          tooltipFocused = true;
+          focusedNodeEl = e.currentTarget;
+          clearTimeout(hideTimer);
+          tooltip.innerHTML = buildTooltip(d);
           tooltip.style.display = "block";
           positionTooltip(e);
+          d3.select(e.currentTarget).select("circle")
+            .attr("stroke", "#1d4ed8")
+            .attr("stroke-width", 2.5);
         })
-        .on("mousemove", positionTooltip)
-        .on("mouseleave", () => { tooltip.style.display = "none"; })
+        .on("mouseenter", (e, d) => {
+          clearTimeout(hideTimer);
+          if (!tooltipFocused) {
+            tooltip.innerHTML = buildTooltip(d);
+            tooltip.style.display = "block";
+            positionTooltip(e);
+          }
+        })
+        .on("mousemove", (e) => { if (!tooltipFocused) positionTooltip(e); })
+        .on("mouseleave", () => { if (!tooltipFocused) hideTimer = setTimeout(() => { tooltip.style.display = "none"; }, 200); })
         .call(
           d3.drag()
             .on("start", (e, d) => { if (!e.active) simulation.alphaTarget(0.3).restart(); d.fx = d.x; d.fy = d.y; })
@@ -207,7 +317,14 @@
           return "#e5e7eb";
         })
         .attr("stroke", "#fff")
-        .attr("stroke-width", 1.5);
+        .attr("stroke-width", 1.5)
+        .attr("pointer-events", "none");
+
+      // Invisible hit-area circle — minimum 14px radius for easy hovering
+      nodeG.append("circle")
+        .attr("r", d => Math.max(d.is_center ? 16 : rScale(d.citation_count ?? 0), 14))
+        .attr("fill", "transparent")
+        .attr("stroke", "none");
 
       // Label only the center node
       nodeG.filter(d => d.is_center)

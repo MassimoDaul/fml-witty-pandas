@@ -1,7 +1,9 @@
 {
   "permissions": {
     "allow": [
-      "WebSearch"
+      "WebSearch",
+      "Bash(pip show:*)",
+      "Bash(pip install:*)"
     ]
   }
 }

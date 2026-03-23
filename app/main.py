@@ -14,6 +14,8 @@ import psycopg2
 from pgvector.psycopg2 import register_vector
 import httpx
 import time
+import threading
+from cachetools import TTLCache
 
 templates = Jinja2Templates(directory=str(Path(__file__).parent / "templates"))
 
@@ -23,6 +25,8 @@ async def lifespan(app: FastAPI):
     conn = psycopg2.connect(POSTGRES_CONN_STRING)
     register_vector(conn)
     app.state.conn = conn
+    app.state.s2_cache = TTLCache(maxsize=64, ttl=3600) # small cache with 1 hour ttl
+    app.state.s2_cache_lock = threading.Lock()
     embed_query("warmup")
     yield
     conn.close()
@@ -94,13 +98,25 @@ def paper_detail(request: Request, arxiv_id: str):
 
 @app.get("/api/paper/{arxiv_id}/references")
 def paper_references(request: Request, arxiv_id: str):
-    url = f"https://api.semanticscholar.org/graph/v1/paper/ArXiv:{arxiv_id}/references"
+    with request.app.state.s2_cache_lock:
+        cached = request.app.state.s2_cache.get(arxiv_id)
+    if cached:
+        return JSONResponse(cached)
+
+    url = f"https://api.semanticscholar.org/graph/v1/paper/ArXiv:{arxiv_id}"
+    fields = (
+        "externalIds,"
+        "references.title,references.externalIds,references.year,references.authors,references.citationCount,"
+        "citations.title,citations.externalIds,citations.year,citations.authors,citations.citationCount"
+    )
     try:
-        resp = httpx.get(url, params={"fields": "title,externalIds,year,authors,citationCount"}, timeout=15.0)
-        if resp.status_code == 429:
-            wait = int(resp.headers.get("Retry-After", 5))
+        resp = None
+        for attempt in range(4):
+            resp = httpx.get(url, params={"fields": fields}, timeout=15.0)
+            if resp.status_code != 429:
+                break
+            wait = int(resp.headers.get("Retry-After", 0)) or (2 ** attempt)
             time.sleep(wait)
-            resp = httpx.get(url, params={"fields": "title,externalIds,year,authors,citationCount"}, timeout=15.0)
     except httpx.RequestError:
         return JSONResponse({"nodes": [], "links": [], "error": "Could not reach Semantic Scholar"})
 
@@ -111,39 +127,58 @@ def paper_references(request: Request, arxiv_id: str):
     if resp.status_code != 200:
         return JSONResponse({"nodes": [], "links": [], "error": f"Semantic Scholar returned {resp.status_code}"})
 
-    data = resp.json().get("data", [])
+    body = resp.json()
 
-    seen = set()
-    refs = []
-    for item in data:
-        cited = item.get("citedPaper") or {}
-        ext_ids = cited.get("externalIds") or {}
-        arxiv_ref = ext_ids.get("ArXiv")
-        node_id = arxiv_ref or cited.get("paperId") or ""
-        if not node_id or node_id in seen:
-            continue
-        seen.add(node_id)
-        refs.append({
-            "id": node_id,
-            "arxiv_id": arxiv_ref,
-            "title": cited.get("title") or "Unknown",
-            "year": cited.get("year"),
-            "authors": [a.get("name", "") for a in (cited.get("authors") or [])[:3]],
-            "citation_count": cited.get("citationCount"),
-        })
+    def parse_papers(items, is_citation):
+        seen = set()
+        result = []
+        for paper in items:
+            ext_ids = paper.get("externalIds") or {}
+            arxiv_ref = ext_ids.get("ArXiv")
+            node_id = arxiv_ref or paper.get("paperId") or ""
+            if not node_id or node_id in seen:
+                continue
+            seen.add(node_id)
+            result.append({
+                "id": node_id,
+                "arxiv_id": arxiv_ref,
+                "s2_id": paper.get("paperId"),
+                "ext_ids": {k: v for k, v in ext_ids.items() if k != "ArXiv"},
+                "title": paper.get("title") or "Unknown",
+                "year": paper.get("year"),
+                "authors": [a.get("name", "") for a in (paper.get("authors") or [])[:3]],
+                "citation_count": paper.get("citationCount"),
+                "is_citation": is_citation,
+            })
+        return result
+
+    refs = parse_papers(body.get("references") or [], False)
+    cites = parse_papers(body.get("citations") or [], True)
+    all_nodes = refs + cites
 
     conn = request.app.state.conn
-    ref_arxiv_ids = [r["arxiv_id"] for r in refs if r["arxiv_id"]]
+    all_arxiv_ids = [n["arxiv_id"] for n in all_nodes if n["arxiv_id"]]
     in_db = set()
-    if ref_arxiv_ids:
+    if all_arxiv_ids:
         with conn.cursor() as cur:
-            cur.execute("SELECT arxiv_id FROM papers WHERE arxiv_id = ANY(%s)", (ref_arxiv_ids,))
+            cur.execute("SELECT arxiv_id FROM papers WHERE arxiv_id = ANY(%s)", (all_arxiv_ids,))
             in_db = {row[0] for row in cur.fetchall()}
 
-    nodes = [{"id": arxiv_id, "arxiv_id": arxiv_id, "is_center": True, "in_db": True}]
+    nodes = [{"id": arxiv_id, "arxiv_id": arxiv_id, "is_center": True, "is_citation": False, "in_db": True}]
     links = []
-    for r in refs:
-        nodes.append({**r, "in_db": r["arxiv_id"] in in_db if r["arxiv_id"] else False, "is_center": False})
-        links.append({"source": arxiv_id, "target": r["id"]})
+    for n in all_nodes:
+        nodes.append({**n, "in_db": n["arxiv_id"] in in_db if n["arxiv_id"] else False, "is_center": False})
+        if n["is_citation"]:
+            links.append({"source": n["id"], "target": arxiv_id, "is_citation": True})
+        else:
+            links.append({"source": arxiv_id, "target": n["id"], "is_citation": False})
 
-    return JSONResponse({"nodes": nodes, "links": links})
+    response_data = {
+        "nodes": nodes,
+        "links": links,
+        "paper_ids": body.get("externalIds") or {},
+        "s2_paper_id": body.get("paperId"),
+    }
+    with request.app.state.s2_cache_lock:
+        request.app.state.s2_cache[arxiv_id] = response_data
+    return JSONResponse(response_data)
