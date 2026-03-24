@@ -91,17 +91,31 @@ function positionTooltip(e) {
 }
 
 function buildTooltip(d) {
-  const lines = [`<strong>${d.title}</strong>`];
+  const titleHref = d.in_db && d.arxiv_id ? `/paper/${d.arxiv_id}`
+    : d.arxiv_id ? `https://arxiv.org/abs/${d.arxiv_id}` : null;
+  const titleHtml = titleHref
+    ? `<strong><a href="${titleHref}"${d.in_db ? "" : ' target="_blank"'}>${d.title}</a></strong>`
+    : `<strong>${d.title}</strong>`;
+  const lines = [titleHtml];
   if (d.year) lines.push(`Year: ${d.year}`);
   if (d.citation_count != null) lines.push(`Citations: ${d.citation_count.toLocaleString()}`);
-  if (d.authors && d.authors.length) lines.push(d.authors.join(", "));
+  if (d.authors && d.authors.length) {
+    const authorLinks = d.authors.map(
+      a => `<a href="/author?name=${encodeURIComponent(a)}">${a}</a>`
+    );
+    lines.push(authorLinks.join(", "));
+  }
   const role = d.is_center ? "This paper"
     : d.is_citation ? "Cites this paper"
     : "Referenced by this paper";
   const loc = d.in_db ? " · In local database" : d.arxiv_id ? " · arXiv only" : "";
   lines.push(role + loc);
   const linkParts = [];
-  if (d.arxiv_id) linkParts.push(`<a href="https://arxiv.org/abs/${d.arxiv_id}" target="_blank">arXiv</a>`);
+  if (d.arxiv_id) linkParts.push(
+    d.in_db
+      ? `<a href="/paper/${d.arxiv_id}">View paper</a>`
+      : `<a href="https://arxiv.org/abs/${d.arxiv_id}" target="_blank">arXiv</a>`
+  );
   const ids = d.ext_ids || {};
   if (ids.DOI)    linkParts.push(`<a href="https://doi.org/${ids.DOI}" target="_blank">DOI</a>`);
   if (ids.PubMed) linkParts.push(`<a href="https://pubmed.ncbi.nlm.nih.gov/${ids.PubMed}" target="_blank">PubMed</a>`);
@@ -124,9 +138,9 @@ function renderGraph(nodes, links) {
     .domain([minYear - 0.5, maxYear + 0.5])
     .range([margin.left + 10, W - margin.right - 10]);
 
-  // Citation count → node radius (larger)
+  // Citation count → node radius
   const maxCit = d3.max(nodes.filter(d => !d.is_center), d => d.citation_count ?? 0) || 1;
-  const rScale = d3.scaleSqrt().domain([0, maxCit]).range([6, 24]).clamp(true);
+  const rScale = d3.scaleSqrt().domain([0, maxCit]).range([12, 48]).clamp(true);
 
   const svg = d3.select("#graph")
     .attr("viewBox", `0 0 ${W} ${H}`)
@@ -240,7 +254,6 @@ function renderGraph(nodes, links) {
         positionTooltip(e);
       }
     })
-    .on("mousemove", (e) => { if (!tooltipFocused) positionTooltip(e); })
     .on("mouseleave", () => { if (!tooltipFocused) hideTimer = setTimeout(() => { tooltip.style.display = "none"; }, 200); })
     .call(
       d3.drag()
