@@ -1,47 +1,77 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>Paper Search</title>
-  <script src="https://unpkg.com/htmx.org@2.0.4" integrity="sha384-HGfztofotfshcF7+8n44JQL2oJmowVChPTg48S+jvZoztPfvwD79OC/LTtG6dMp+" crossorigin="anonymous"></script>
-  <link rel="stylesheet" href="/static/style.css">
-</head>
-<body>
-  <h2>Paper Search</h2>
-  <form hx-post="/search" hx-target="#results" hx-swap="innerHTML" hx-indicator="#spinner">
-    <div class="search-row">
-      <input name="query" id="query" type="text" placeholder="Research topic or author name" required autofocus />
-      <select name="type" id="type-select" onchange="
-        document.getElementById('query').placeholder = this.value === 'authors' ? 'Author name' : 'Research topic';
-        document.getElementById('paper-filters').style.display = this.value === 'authors' ? 'none' : 'block';
-      ">
-        <option value="papers">Papers</option>
-        <option value="authors">Authors</option>
-      </select>
-      <input name="k" type="number" value="10" min="1" max="50" placeholder="k" title="Number of results" />
-      <button type="submit">Search</button>
-      <span id="spinner" class="htmx-indicator">searching...</span>
-    </div>
-    <div id="paper-filters">
-      <details class="filters">
-        <summary>Filters</summary>
-        <div class="filters-body">
-          <label>
-            Category
-            <input name="categories" type="text" placeholder="e.g. cs.LG cs.AI" title="Space or comma-separated arXiv categories" />
-          </label>
-          <label>
-            Year from
-            <input name="year_from" type="number" placeholder="e.g. 2020" min="1991" max="2099" />
-          </label>
-          <label>
-            Year to
-            <input name="year_to" type="number" placeholder="e.g. 2024" min="1991" max="2099" />
-          </label>
+{% extends "base.html" %}
+{% from "macros.html" import example_queries, search_mode_toggle, site_header %}
+
+{% block title %}Student Research Helper | Search{% endblock %}
+{% block body_class %}page-search{% endblock %}
+
+{% block body %}
+{{ site_header("search") }}
+
+<main id="main-content" class="landing-page">
+  <section class="hero">
+    <div class="site-shell site-shell--wide hero__layout">
+      <div class="hero__copy">
+        <p class="eyebrow">Academic paper search</p>
+        <h1>Find papers for a question, topic, or project.</h1>
+        <p class="hero__lede">Search in plain language. Start with what you want to understand, build, compare, or cite.</p>
+        <p class="hero__support">Paper search is primary. Author lookup is available when you already know the researcher.</p>
+
+        <ul class="hero-points" aria-label="Search guidance">
+          <li>Search by question, topic, method, field, or researcher.</li>
+          <li>Use the results page to refine by subject or publication year.</li>
+          <li>Open details, related work, and arXiv links from each result.</li>
+        </ul>
+      </div>
+
+      <section class="hero-search-card" aria-labelledby="hero-search-title">
+        <div class="section-heading">
+          <p class="eyebrow eyebrow--small">Search-first interface</p>
+          <h2 id="hero-search-title">Search in plain language.</h2>
+          <p>Discover relevant research without knowing the exact title.</p>
         </div>
-      </details>
+
+        <form action="/results" method="get" class="search-form search-form--landing" data-search-form>
+          {{ search_mode_toggle(mode) }}
+
+          <div class="field-group field-group--query">
+            <label for="landing-query">Research topic or author name</label>
+            <div class="input-shell">
+              <svg class="field-icon" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M10.5 4.75a5.75 5.75 0 1 0 0 11.5a5.75 5.75 0 0 0 0-11.5Z" />
+                <path d="M15 15 19.25 19.25" />
+              </svg>
+              <input
+                id="landing-query"
+                name="q"
+                type="text"
+                value="{{ query }}"
+                required
+                autofocus
+                autocomplete="off"
+                placeholder="Try “machine learning for endangered languages”"
+                aria-describedby="landing-query-hint"
+                data-search-input
+              >
+            </div>
+            <p id="landing-query-hint" class="field-hint" data-search-hint>
+              Search by question, topic, method, field, or researcher.
+            </p>
+          </div>
+
+          <div class="landing-search-actions">
+            <button type="submit" class="button-primary" data-submit-button>
+              <span data-submit-label>Search papers</span>
+            </button>
+            <p class="search-status" aria-live="polite" data-search-status>Filters and sorting appear on the results page.</p>
+          </div>
+        </form>
+
+        <div class="example-block">
+          <p class="example-block__label">Try one of these</p>
+          {{ example_queries() }}
+        </div>
+      </section>
     </div>
-  </form>
-  <div id="results"></div>
-</body>
-</html>
+  </section>
+</main>
+{% endblock %}
