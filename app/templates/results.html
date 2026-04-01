@@ -1,0 +1,167 @@
+{% extends "base.html" %}
+{% from "macros.html" import search_mode_toggle, site_header %}
+
+{% block title %}Student Research Helper | Results{% endblock %}
+{% block body_class %}page-results{% endblock %}
+
+{% block head %}
+  <script src="https://unpkg.com/htmx.org@2.0.4" integrity="sha384-HGfztofotfshcF7+8n44JQL2oJmowVChPTg48S+jvZoztPfvwD79OC/LTtG6dMp+" crossorigin="anonymous"></script>
+{% endblock %}
+
+{% block body %}
+{{ site_header("results") }}
+
+<main id="main-content" class="results-page">
+  <form
+    id="results-form"
+    class="workspace-form"
+    action="/results"
+    method="get"
+    hx-get="/results"
+    hx-select="#results-content"
+    hx-target="#results-content"
+    hx-push-url="true"
+    hx-indicator="#results-loading"
+    data-search-form
+  >
+    <section class="workspace-toolbar">
+      <div class="site-shell site-shell--wide">
+        <div class="workspace-toolbar__inner">
+          <div class="workspace-toolbar__primary">
+            {{ search_mode_toggle(mode) }}
+
+            <div class="field-group field-group--query workspace-query">
+              <label for="results-query">Search the library</label>
+              <div class="input-shell">
+                <svg class="field-icon" viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M10.5 4.75a5.75 5.75 0 1 0 0 11.5a5.75 5.75 0 0 0 0-11.5Z" />
+                  <path d="M15 15 19.25 19.25" />
+                </svg>
+                <input
+                  id="results-query"
+                  name="q"
+                  type="text"
+                  value="{{ query }}"
+                  required
+                  autocomplete="off"
+                  placeholder="Try “machine learning for endangered languages”"
+                  aria-describedby="results-query-hint"
+                  data-search-input
+                >
+              </div>
+              <p id="results-query-hint" class="field-hint" data-search-hint>
+                Search by question, topic, method, field, or researcher.
+              </p>
+            </div>
+
+            <button type="submit" class="button-primary workspace-submit" data-submit-button>
+              <span data-submit-label>{% if mode == "authors" %}Find author{% else %}Update results{% endif %}</span>
+            </button>
+          </div>
+
+          <div class="workspace-toolbar__secondary">
+            <button type="button" class="button-subtle workspace-filter-toggle" data-filters-open>
+              Filters
+            </button>
+
+            <label class="sort-control{% if mode == 'authors' %} is-disabled{% endif %}" data-paper-sort{% if mode == "authors" %} aria-disabled="true"{% endif %}>
+              <span>Sort</span>
+              <select name="sort" {% if mode == "authors" %}disabled{% endif %}>
+                <option value="relevance" {% if sort == "relevance" %}selected{% endif %}>Relevance</option>
+                <option value="newest" {% if sort == "newest" %}selected{% endif %}>Newest first</option>
+                <option value="oldest" {% if sort == "oldest" %}selected{% endif %}>Oldest first</option>
+              </select>
+            </label>
+
+            <p id="results-loading" class="search-status htmx-indicator" aria-live="polite">Updating results…</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="site-shell site-shell--wide workspace-layout">
+      <div class="mobile-drawer-backdrop" data-filters-close></div>
+
+      <aside class="filter-sidebar" data-filter-sidebar>
+        <div class="filter-sidebar__header">
+          <div>
+            <p class="eyebrow eyebrow--small">Refine</p>
+            <h2>Filters</h2>
+          </div>
+          <button type="button" class="icon-button filter-sidebar__close" data-filters-close aria-label="Close filters">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M6 6 18 18" />
+              <path d="M18 6 6 18" />
+            </svg>
+          </button>
+        </div>
+
+        <div class="filter-sidebar__body" data-paper-filters {% if mode == "authors" %}hidden{% endif %}>
+          <div class="field-group">
+            <label for="results-categories">Subject / arXiv field</label>
+            <input
+              id="results-categories"
+              name="categories"
+              type="text"
+              value="{{ categories }}"
+              placeholder="cs.CL, cs.AI, q-bio.GN"
+            >
+            <p class="field-hint">Use spaces or commas to combine arXiv subjects.</p>
+          </div>
+
+          <div class="field-row">
+            <div class="field-group">
+              <label for="results-year-from">Year from</label>
+              <input id="results-year-from" name="year_from" type="number" min="1900" max="2099" inputmode="numeric" value="{{ year_from }}" placeholder="2019">
+            </div>
+
+            <div class="field-group">
+              <label for="results-year-to">Year to</label>
+              <input id="results-year-to" name="year_to" type="number" min="1900" max="2099" inputmode="numeric" value="{{ year_to }}" placeholder="2026">
+            </div>
+          </div>
+
+          <div class="field-group">
+            <label for="results-k">Results shown</label>
+            <select id="results-k" name="k">
+              {% for option in [8, 12, 16, 24, 32] %}
+              <option value="{{ option }}" {% if k == option %}selected{% endif %}>{{ option }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <p class="sidebar-note">The current library supports subject and year filters. Keep the first pass broad, then narrow only if needed.</p>
+        </div>
+
+        <div class="filter-sidebar__body" data-author-note {% if mode != "authors" %}hidden{% endif %}>
+          <div class="field-group">
+            <label for="results-k-authors">Authors shown</label>
+            <select id="results-k-authors" name="k">
+              {% for option in [5, 8, 12, 16] %}
+              <option value="{{ option }}" {% if k == option %}selected{% endif %}>{{ option }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <section class="sidebar-callout">
+            <p class="eyebrow eyebrow--small">Secondary mode</p>
+            <h3>Author lookup stays simple.</h3>
+            <p>Search authors when you already know the researcher. Paper filters are intentionally hidden in this mode.</p>
+          </section>
+        </div>
+
+        <div class="filter-sidebar__actions">
+          <button type="submit" class="button-primary button-primary--full">Apply</button>
+          <a class="button-subtle button-subtle--link" href="{{ clear_filters_url }}">Clear filters</a>
+        </div>
+      </aside>
+
+      <section class="results-main">
+        <div id="results-content">
+          {% include "_results_content.html" %}
+        </div>
+      </section>
+    </div>
+  </form>
+</main>
+{% endblock %}

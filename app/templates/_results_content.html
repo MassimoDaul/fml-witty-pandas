@@ -1,0 +1,110 @@
+{% from "macros.html" import author_card, paper_card %}
+
+{% if not has_query %}
+<section class="state-panel">
+  <p class="eyebrow">Results workspace</p>
+  <h2>Start with a question, topic, or researcher.</h2>
+  <p>The search bar stays available here so you can refine without going back to the landing page.</p>
+  <div class="state-actions">
+    <a class="button-secondary" href="/">Back to search page</a>
+  </div>
+</section>
+{% elif error_message %}
+<section class="state-panel state-panel--error">
+  <p class="eyebrow">Search unavailable</p>
+  <h2>There was a problem running that search.</h2>
+  <p>{{ error_message }}</p>
+  <div class="state-actions">
+    <a class="button-secondary" href="{{ clear_filters_url }}">Try again</a>
+  </div>
+</section>
+{% else %}
+<section class="results-overview">
+  <div class="results-overview__copy">
+    <p class="eyebrow">{% if mode == "authors" %}Author search{% else %}Paper search{% endif %}</p>
+    <h1>
+      {% if result_count %}
+      {{ result_count }} result{{ "s" if result_count != 1 else "" }} for “{{ query }}”
+      {% else %}
+      No results for “{{ query }}”
+      {% endif %}
+    </h1>
+    <p>
+      {% if mode == "authors" %}
+      Browse matching researchers and open an author to see the papers currently stored in the local library.
+      {% else %}
+      Results are ranked semantically from the title and abstract. Use filters only when the first pass is too broad.
+      {% endif %}
+    </p>
+  </div>
+
+  <div class="results-overview__stats" aria-label="Search summary">
+    <div class="stat-card">
+      <span class="stat-card__label">Mode</span>
+      <strong>{% if mode == "authors" %}Authors{% else %}Papers{% endif %}</strong>
+    </div>
+    <div class="stat-card">
+      <span class="stat-card__label">Showing</span>
+      <strong>{{ result_count }}</strong>
+    </div>
+    {% if mode == "papers" %}
+    <div class="stat-card">
+      <span class="stat-card__label">Sort</span>
+      <strong>
+        {% if sort == "newest" %}
+        Newest
+        {% elif sort == "oldest" %}
+        Oldest
+        {% else %}
+        Relevance
+        {% endif %}
+      </strong>
+    </div>
+    {% endif %}
+  </div>
+</section>
+
+{% if categories or year_from or year_to %}
+<section class="active-filters" aria-label="Active filters">
+  <span class="active-filters__label">Active filters</span>
+  {% if categories %}
+  <span class="tag">Subject: {{ categories }}</span>
+  {% endif %}
+  {% if year_from %}
+  <span class="tag">From {{ year_from }}</span>
+  {% endif %}
+  {% if year_to %}
+  <span class="tag">To {{ year_to }}</span>
+  {% endif %}
+  <a class="text-link" href="{{ clear_filters_url }}">Clear all</a>
+</section>
+{% endif %}
+
+{% if not results %}
+<section class="state-panel">
+  <p class="eyebrow">No results yet</p>
+  <h2>No matches for “{{ query }}”.</h2>
+  <p>Try broader wording, remove a filter, or switch modes if you are searching for a person rather than a topic.</p>
+  <div class="state-actions">
+    {% if categories or year_from or year_to %}
+    <a class="button-secondary" href="{{ clear_filters_url }}">Search without filters</a>
+    {% endif %}
+    <a class="button-subtle button-subtle--link" href="{{ switch_mode_url }}">
+      {% if mode == "authors" %}Search papers instead{% else %}Look for authors instead{% endif %}
+    </a>
+  </div>
+</section>
+{% else %}
+<div class="results-list" aria-live="polite">
+  {% if mode == "authors" %}
+    {% for author in results %}
+    {{ author_card(author, current_url) }}
+    {% endfor %}
+  {% else %}
+    {% for paper in results %}
+    {{ paper_card(paper, current_url) }}
+    {% endfor %}
+  {% endif %}
+</div>
+{% endif %}
+{% endif %}
