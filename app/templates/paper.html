@@ -1,62 +1,101 @@
-{% from "macros.html" import authors_line %}
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>Paper Search | {{ paper.title }}</title>
+{% extends "base.html" %}
+{% from "macros.html" import authors_line, site_header %}
+
+{% block title %}Student Research Helper | {{ paper.title }}{% endblock %}
+{% block body_class %}page-detail{% endblock %}
+
+{% block head %}
   <script src="https://unpkg.com/htmx.org@2.0.4" integrity="sha384-HGfztofotfshcF7+8n44JQL2oJmowVChPTg48S+jvZoztPfvwD79OC/LTtG6dMp+" crossorigin="anonymous"></script>
   <script src="https://d3js.org/d3.v7.min.js"></script>
-  <link rel="stylesheet" href="/static/style.css">
-</head>
-<body>
-  <a href="/" class="back">← Back to search</a>
-  <h2>{{ paper.title }}</h2>
-  <p>
-    <small>
-      {% if paper.authors %}{{ authors_line(paper.authors) }} &mdash;{% endif %}
-      {{ paper.categories | join(", ") }} | {{ paper.published or "–" }}
-      &nbsp;·&nbsp;
-      <a href="https://arxiv.org/abs/{{ paper.arxiv_id }}" target="_blank">arXiv:{{ paper.arxiv_id }}</a>
-      <span id="paper-ext-ids"></span>
-    </small>
-  </p>
-  <p style="font-size: 0.95em; color: #333; margin-top: 0.5rem;">{{ paper.abstract }}</p>
+{% endblock %}
 
-  <h3 style="margin-top: 1.5rem;">Reference Graph</h3>
-  <div id="graph-wrap">
-    <p id="graph-status">Loading references and citations from Semantic Scholar…</p>
-    <div id="tooltip" style="position:absolute;display:none;background:#fff;border:1px solid #e5e7eb;border-radius:4px;padding:6px 10px;font-size:11px;max-width:280px;box-shadow:0 2px 6px rgba(0,0,0,0.1);line-height:1.5;z-index:10;"></div>
-    <svg id="graph"
-      data-arxiv-id="{{ paper.arxiv_id }}"
-      data-title="{{ paper.title }}"
-      data-year="{{ paper.published[:4] if paper.published else '' }}">
-    </svg>
-  </div>
-  <div class="legend">
-    <div class="legend-item">
-      <div class="legend-dot" style="background:#f59e0b; width:16px; height:16px;"></div> This paper
-    </div>
-    <div class="legend-item">
-      <div class="legend-dot" style="background:#3b82f6;"></div> In local database
-    </div>
-    <div class="legend-item">
-      <div class="legend-dot" style="background:#9ca3af;"></div> arXiv only
-    </div>
-    <div class="legend-item">
-      <svg width="28" height="12" style="flex-shrink:0"><line x1="0" y1="6" x2="20" y2="6" stroke="#f97316" stroke-width="1.5"/><polygon points="20,3 28,6 20,9" fill="#f97316"/></svg> Cites this paper
-    </div>
-    <div class="legend-item">
-      <svg width="28" height="12" style="flex-shrink:0"><line x1="8" y1="6" x2="28" y2="6" stroke="#6b7280" stroke-width="1.5"/><polygon points="0,6 8,3 8,9" fill="#6b7280"/></svg> Referenced by this paper
-    </div>
-  </div>
+{% block body %}
+{{ site_header("results") }}
 
-  <h3 style="margin-top: 2rem;">Related Papers</h3>
-  <div hx-get="/paper/{{ paper.arxiv_id }}/related"
-       hx-trigger="load"
-       hx-swap="innerHTML">
-    <p style="color:#6b7280;">Finding related papers…</p>
-  </div>
+<main id="main-content" class="detail-page">
+  <div class="site-shell site-shell--wide">
+    <a href="{{ back_href }}" class="back-link">Back to results</a>
 
+    <section class="detail-hero">
+      <div class="detail-hero__copy">
+        <p class="eyebrow">Paper detail</p>
+        <h1>{{ paper.title }}</h1>
+        <p class="detail-meta">
+          {% if paper.authors %}{{ authors_line(paper.authors) }} · {% endif %}
+          {{ paper.published or "Publication date unavailable" }} · arXiv preprint
+        </p>
+        {% if paper.categories %}
+        <ul class="tag-list">
+          {% for category in paper.categories[:5] %}
+          <li class="tag">{{ category }}</li>
+          {% endfor %}
+        </ul>
+        {% endif %}
+      </div>
+
+      <aside class="detail-sidecard">
+        <h2>Access</h2>
+        <a class="button-primary button-primary--full" href="https://arxiv.org/abs/{{ paper.arxiv_id }}" target="_blank" rel="noopener noreferrer">Open on arXiv</a>
+        <p class="sidebar-note">The current library indexes arXiv papers, so the source is open access by default.</p>
+      </aside>
+    </section>
+
+    <div class="detail-grid">
+      <article class="detail-panel">
+        <h2>Abstract</h2>
+        <p class="detail-abstract">{{ paper.abstract }}</p>
+      </article>
+
+      <section class="detail-panel">
+        <h2>Related papers</h2>
+        <div
+          hx-get="/paper/{{ paper.arxiv_id }}/related"
+          hx-trigger="load"
+          hx-swap="innerHTML"
+          class="detail-related"
+        >
+          <p class="search-status">Finding related papers…</p>
+        </div>
+      </section>
+    </div>
+
+    <section class="detail-panel detail-panel--graph">
+      <div class="detail-panel__header">
+        <div>
+          <p class="eyebrow eyebrow--small">Citation context</p>
+          <h2>Reference graph</h2>
+        </div>
+      </div>
+
+      <div id="graph-wrap" class="graph-wrap">
+        <p id="graph-status">Loading references and citations from Semantic Scholar…</p>
+        <div id="tooltip"></div>
+        <svg
+          id="graph"
+          data-arxiv-id="{{ paper.arxiv_id }}"
+          data-title="{{ paper.title }}"
+          data-year="{{ paper.published[:4] if paper.published else '' }}"
+        ></svg>
+      </div>
+
+      <div class="legend">
+        <div class="legend-item"><span class="legend-dot legend-dot--center"></span> This paper</div>
+        <div class="legend-item"><span class="legend-dot legend-dot--db"></span> In local database</div>
+        <div class="legend-item"><span class="legend-dot legend-dot--external"></span> arXiv only</div>
+        <div class="legend-item">
+          <svg width="28" height="12" aria-hidden="true"><line x1="0" y1="6" x2="20" y2="6" stroke="#9a5a2f" stroke-width="1.5"></line><polygon points="20,3 28,6 20,9" fill="#9a5a2f"></polygon></svg>
+          Cites this paper
+        </div>
+        <div class="legend-item">
+          <svg width="28" height="12" aria-hidden="true"><line x1="8" y1="6" x2="28" y2="6" stroke="#6b6258" stroke-width="1.5"></line><polygon points="0,6 8,3 8,9" fill="#6b6258"></polygon></svg>
+          Referenced by this paper
+        </div>
+      </div>
+    </section>
+  </div>
+</main>
+{% endblock %}
+
+{% block scripts %}
   <script src="/static/graph.js" defer></script>
-</body>
-</html>
+{% endblock %}

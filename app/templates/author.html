@@ -1,30 +1,38 @@
-{% from "macros.html" import authors_line %}
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>Author | {{ name }}</title>
-  <link rel="stylesheet" href="/static/style.css">
-</head>
-<body>
-  <a href="/" class="back">← Back to search</a>
-  <h2>{{ name }}</h2>
-  <p><small>{{ papers | length }} paper{{ 's' if papers | length != 1 else '' }} in database</small></p>
+{% extends "base.html" %}
+{% from "macros.html" import paper_card, site_header %}
 
-  {% for p in papers %}
-  <div class="paper">
-    <a href="/paper/{{ p.arxiv_id }}">{{ p.title }}</a><br>
-    <span class="meta">
-      {% if p.authors %}{{ authors_line(p.authors) }} &mdash;{% endif %}
-      {{ p.categories | join(", ") }} | {{ p.published or "–" }}
-      &nbsp;·&nbsp;
-      <a href="https://arxiv.org/abs/{{ p.arxiv_id }}" target="_blank">arXiv:{{ p.arxiv_id }}</a>
-    </span>
-    <p class="abstract">
-      {{ p.abstract[:300] }}{% if p.abstract | length > 300 %}...{% endif %}
-    </p>
+{% block title %}Student Research Helper | {{ name }}{% endblock %}
+{% block body_class %}page-detail{% endblock %}
+
+{% block body %}
+{{ site_header("results") }}
+
+<main id="main-content" class="detail-page">
+  <div class="site-shell site-shell--wide">
+    <a href="{{ back_href }}" class="back-link">Back to results</a>
+
+    <section class="detail-hero detail-hero--author">
+      <div class="detail-hero__copy">
+        <p class="eyebrow">Author detail</p>
+        <h1>{{ name }}</h1>
+        <p class="hero__support">{{ papers | length }} paper{{ "s" if papers | length != 1 else "" }} currently stored in the local library.</p>
+      </div>
+    </section>
+
+    <section class="detail-panel">
+      <div class="detail-panel__header">
+        <div>
+          <p class="eyebrow eyebrow--small">Paper list</p>
+          <h2>Recent papers</h2>
+        </div>
+      </div>
+
+      <div class="results-list">
+        {% for paper in papers %}
+        {{ paper_card(paper, current_url) }}
+        {% endfor %}
+      </div>
+    </section>
   </div>
-  <hr>
-  {% endfor %}
-</body>
-</html>
+</main>
+{% endblock %}

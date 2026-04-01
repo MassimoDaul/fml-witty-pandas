@@ -1,0 +1,14 @@
+{% from "macros.html" import paper_card %}
+
+{% if not results %}
+<section class="state-panel">
+  <p class="eyebrow">Related papers</p>
+  <h3>No related papers were found in the local library.</h3>
+</section>
+{% else %}
+<div class="related-results">
+  {% for paper in results %}
+  {{ paper_card(paper, return_to, compact=True) }}
+  {% endfor %}
+</div>
+{% endif %}
