@@ -81,4 +81,13 @@ TBD
 
 ---
 
+## Contributors
+
+- [Massimo Daul](https://github.com/MassimoDaul)
+- [Benny Yuan](https://github.com/bennyyuan12)
+- [Andrew Jiang](https://github.com/minghanminghan)
+- [Audrey McKnight](https://github.com/audrey-mcknight)
+
+---
+
 Thank you to arXiv for use of its open access interoperability.
