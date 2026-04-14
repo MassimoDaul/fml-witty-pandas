@@ -1,0 +1,100 @@
+{"queryId": "q_001", "query": "machine learning for healthcare", "year": null, "fields": "paperId,title,abstract,authors,year,publicationDate,fieldsOfStudy,s2FieldsOfStudy,url"}
+{"queryId": "q_002", "query": "graph learning in biology", "year": null, "fields": "paperId,title,abstract,authors,year,publicationDate,fieldsOfStudy,s2FieldsOfStudy,url"}
+{"queryId": "q_003", "query": "fairness in AI for education", "year": null, "fields": "paperId,title,abstract,authors,year,publicationDate,fieldsOfStudy,s2FieldsOfStudy,url"}
+{"queryId": "q_004", "query": "multimodal learning in robotics", "year": null, "fields": "paperId,title,abstract,authors,year,publicationDate,fieldsOfStudy,s2FieldsOfStudy,url"}
+{"queryId": "q_005", "query": "federated learning in medicine", "year": null, "fields": "paperId,title,abstract,authors,year,publicationDate,fieldsOfStudy,s2FieldsOfStudy,url"}
+{"queryId": "q_006", "query": "retrieval augmented generation", "year": null, "fields": "paperId,title,abstract,authors,year,publicationDate,fieldsOfStudy,s2FieldsOfStudy,url"}
+{"queryId": "q_007", "query": "AI for climate modeling", "year": null, "fields": "paperId,title,abstract,authors,year,publicationDate,fieldsOfStudy,s2FieldsOfStudy,url"}
+{"queryId": "q_008", "query": "self supervised learning for speech", "year": null, "fields": "paperId,title,abstract,authors,year,publicationDate,fieldsOfStudy,s2FieldsOfStudy,url"}
+{"queryId": "q_009", "query": "computer vision for agriculture", "year": null, "fields": "paperId,title,abstract,authors,year,publicationDate,fieldsOfStudy,s2FieldsOfStudy,url"}
+{"queryId": "q_010", "query": "trustworthy AI in finance", "year": null, "fields": "paperId,title,abstract,authors,year,publicationDate,fieldsOfStudy,s2FieldsOfStudy,url"}
+{"queryId": "q_011", "query": "large language models for scientific discovery", "year": null, "fields": "paperId,title,abstract,authors,year,publicationDate,fieldsOfStudy,s2FieldsOfStudy,url"}
+{"queryId": "q_012", "query": "reinforcement learning for autonomous systems", "year": null, "fields": "paperId,title,abstract,authors,year,publicationDate,fieldsOfStudy,s2FieldsOfStudy,url"}
+{"queryId": "q_013", "query": "causal inference in machine learning", "year": null, "fields": "paperId,title,abstract,authors,year,publicationDate,fieldsOfStudy,s2FieldsOfStudy,url"}
+{"queryId": "q_014", "query": "AI for cybersecurity", "year": null, "fields": "paperId,title,abstract,authors,year,publicationDate,fieldsOfStudy,s2FieldsOfStudy,url"}
+{"queryId": "q_015", "query": "privacy preserving machine learning", "year": null, "fields": "paperId,title,abstract,authors,year,publicationDate,fieldsOfStudy,s2FieldsOfStudy,url"}
+{"queryId": "q_016", "query": "AI for materials discovery", "year": null, "fields": "paperId,title,abstract,authors,year,publicationDate,fieldsOfStudy,s2FieldsOfStudy,url"}
+{"queryId": "q_017", "query": "human AI collaboration", "year": null, "fields": "paperId,title,abstract,authors,year,publicationDate,fieldsOfStudy,s2FieldsOfStudy,url"}
+{"queryId": "q_018", "query": "machine learning for genomics", "year": null, "fields": "paperId,title,abstract,authors,year,publicationDate,fieldsOfStudy,s2FieldsOfStudy,url"}
+{"queryId": "q_019", "query": "AI for education technology", "year": null, "fields": "paperId,title,abstract,authors,year,publicationDate,fieldsOfStudy,s2FieldsOfStudy,url"}
+{"queryId": "q_020", "query": "foundation models for healthcare", "year": null, "fields": "paperId,title,abstract,authors,year,publicationDate,fieldsOfStudy,s2FieldsOfStudy,url"}
+{"queryId": "q_021", "query": "domain adaptation in computer vision", "year": null, "fields": "paperId,title,abstract,authors,year,publicationDate,fieldsOfStudy,s2FieldsOfStudy,url"}
+{"queryId": "q_022", "query": "time series forecasting with deep learning", "year": null, "fields": "paperId,title,abstract,authors,year,publicationDate,fieldsOfStudy,s2FieldsOfStudy,url"}
+{"queryId": "q_023", "query": "graph neural networks in chemistry", "year": null, "fields": "paperId,title,abstract,authors,year,publicationDate,fieldsOfStudy,s2FieldsOfStudy,url"}
+{"queryId": "q_024", "query": "AI for mental health", "year": null, "fields": "paperId,title,abstract,authors,year,publicationDate,fieldsOfStudy,s2FieldsOfStudy,url"}
+{"queryId": "q_025", "query": "multimodal reasoning", "year": null, "fields": "paperId,title,abstract,authors,year,publicationDate,fieldsOfStudy,s2FieldsOfStudy,url"}
+{"queryId": "q_026", "query": "clinical foundation models", "year": "2023-", "fields": "paperId,title,abstract,authors,year,publicationDate,fieldsOfStudy,s2FieldsOfStudy,url"}
+{"queryId": "q_027", "query": "multimodal RAG", "year": "2023-", "fields": "paperId,title,abstract,authors,year,publicationDate,fieldsOfStudy,s2FieldsOfStudy,url"}
+{"queryId": "q_028", "query": "vision language models for medical imaging", "year": "2022-", "fields": "paperId,title,abstract,authors,year,publicationDate,fieldsOfStudy,s2FieldsOfStudy,url"}
+{"queryId": "q_029", "query": "graph machine learning for drug discovery", "year": "2021-", "fields": "paperId,title,abstract,authors,year,publicationDate,fieldsOfStudy,s2FieldsOfStudy,url"}
+{"queryId": "q_030", "query": "federated learning in healthcare", "year": "2022-", "fields": "paperId,title,abstract,authors,year,publicationDate,fieldsOfStudy,s2FieldsOfStudy,url"}
+{"queryId": "q_031", "query": "AI for weather forecasting", "year": "2021-", "fields": "paperId,title,abstract,authors,year,publicationDate,fieldsOfStudy,s2FieldsOfStudy,url"}
+{"queryId": "q_032", "query": "large language models for code generation", "year": "2023-", "fields": "paperId,title,abstract,authors,year,publicationDate,fieldsOfStudy,s2FieldsOfStudy,url"}
+{"queryId": "q_033", "query": "privacy preserving machine learning", "year": "2020-2024", "fields": "paperId,title,abstract,authors,year,publicationDate,fieldsOfStudy,s2FieldsOfStudy,url"}
+{"queryId": "q_034", "query": "self supervised learning for robotics", "year": "2021-", "fields": "paperId,title,abstract,authors,year,publicationDate,fieldsOfStudy,s2FieldsOfStudy,url"}
+{"queryId": "q_035", "query": "causal representation learning", "year": "2020-", "fields": "paperId,title,abstract,authors,year,publicationDate,fieldsOfStudy,s2FieldsOfStudy,url"}
+{"queryId": "q_036", "query": "AI for protein design", "year": "2021-", "fields": "paperId,title,abstract,authors,year,publicationDate,fieldsOfStudy,s2FieldsOfStudy,url"}
+{"queryId": "q_037", "query": "diffusion models for scientific applications", "year": "2022-", "fields": "paperId,title,abstract,authors,year,publicationDate,fieldsOfStudy,s2FieldsOfStudy,url"}
+{"queryId": "q_038", "query": "machine learning for electronic health records", "year": "2020-", "fields": "paperId,title,abstract,authors,year,publicationDate,fieldsOfStudy,s2FieldsOfStudy,url"}
+{"queryId": "q_039", "query": "foundation models for biology", "year": "2023-", "fields": "paperId,title,abstract,authors,year,publicationDate,fieldsOfStudy,s2FieldsOfStudy,url"}
+{"queryId": "q_040", "query": "AI for materials science", "year": "2021-", "fields": "paperId,title,abstract,authors,year,publicationDate,fieldsOfStudy,s2FieldsOfStudy,url"}
+{"queryId": "q_041", "query": "machine learning for climate risk", "year": "2020-", "fields": "paperId,title,abstract,authors,year,publicationDate,fieldsOfStudy,s2FieldsOfStudy,url"}
+{"queryId": "q_042", "query": "graph neural networks for recommendation systems", "year": "2020-", "fields": "paperId,title,abstract,authors,year,publicationDate,fieldsOfStudy,s2FieldsOfStudy,url"}
+{"queryId": "q_043", "query": "large language models for education", "year": "2023-", "fields": "paperId,title,abstract,authors,year,publicationDate,fieldsOfStudy,s2FieldsOfStudy,url"}
+{"queryId": "q_044", "query": "speech foundation models", "year": "2022-", "fields": "paperId,title,abstract,authors,year,publicationDate,fieldsOfStudy,s2FieldsOfStudy,url"}
+{"queryId": "q_045", "query": "trustworthy multimodal AI", "year": "2022-", "fields": "paperId,title,abstract,authors,year,publicationDate,fieldsOfStudy,s2FieldsOfStudy,url"}
+{"queryId": "q_046", "query": "AI for medical decision support", "year": "2021-", "fields": "paperId,title,abstract,authors,year,publicationDate,fieldsOfStudy,s2FieldsOfStudy,url"}
+{"queryId": "q_047", "query": "retrieval augmented generation for enterprise search", "year": "2022-", "fields": "paperId,title,abstract,authors,year,publicationDate,fieldsOfStudy,s2FieldsOfStudy,url"}
+{"queryId": "q_048", "query": "AI for precision medicine", "year": "2020-", "fields": "paperId,title,abstract,authors,year,publicationDate,fieldsOfStudy,s2FieldsOfStudy,url"}
+{"queryId": "q_049", "query": "scientific machine learning", "year": "2021-", "fields": "paperId,title,abstract,authors,year,publicationDate,fieldsOfStudy,s2FieldsOfStudy,url"}
+{"queryId": "q_050", "query": "embodied AI", "year": "2022-", "fields": "paperId,title,abstract,authors,year,publicationDate,fieldsOfStudy,s2FieldsOfStudy,url"}
+{"queryId": "q_051", "query": "contrastive learning for chest x ray report generation", "year": null, "fields": "paperId,title,abstract,authors,year,publicationDate,fieldsOfStudy,s2FieldsOfStudy,url"}
+{"queryId": "q_052", "query": "retinal image segmentation with transformer based domain adaptation", "year": null, "fields": "paperId,title,abstract,authors,year,publicationDate,fieldsOfStudy,s2FieldsOfStudy,url"}
+{"queryId": "q_053", "query": "few shot relation extraction with prompt tuning", "year": null, "fields": "paperId,title,abstract,authors,year,publicationDate,fieldsOfStudy,s2FieldsOfStudy,url"}
+{"queryId": "q_054", "query": "graph neural networks for molecular property prediction with uncertainty estimation", "year": null, "fields": "paperId,title,abstract,authors,year,publicationDate,fieldsOfStudy,s2FieldsOfStudy,url"}
+{"queryId": "q_055", "query": "retrieval augmented generation for long document question answering", "year": null, "fields": "paperId,title,abstract,authors,year,publicationDate,fieldsOfStudy,s2FieldsOfStudy,url"}
+{"queryId": "q_056", "query": "diffusion models for inverse problems in medical imaging", "year": null, "fields": "paperId,title,abstract,authors,year,publicationDate,fieldsOfStudy,s2FieldsOfStudy,url"}
+{"queryId": "q_057", "query": "federated learning with differential privacy for electronic health records", "year": null, "fields": "paperId,title,abstract,authors,year,publicationDate,fieldsOfStudy,s2FieldsOfStudy,url"}
+{"queryId": "q_058", "query": "audio visual speech recognition with self supervised pretraining", "year": null, "fields": "paperId,title,abstract,authors,year,publicationDate,fieldsOfStudy,s2FieldsOfStudy,url"}
+{"queryId": "q_059", "query": "protein function prediction with graph transformers", "year": null, "fields": "paperId,title,abstract,authors,year,publicationDate,fieldsOfStudy,s2FieldsOfStudy,url"}
+{"queryId": "q_060", "query": "causal discovery from time series with neural networks", "year": null, "fields": "paperId,title,abstract,authors,year,publicationDate,fieldsOfStudy,s2FieldsOfStudy,url"}
+{"queryId": "q_061", "query": "multimodal sentiment analysis with cross attention transformers", "year": null, "fields": "paperId,title,abstract,authors,year,publicationDate,fieldsOfStudy,s2FieldsOfStudy,url"}
+{"queryId": "q_062", "query": "knowledge graph completion with contrastive learning", "year": null, "fields": "paperId,title,abstract,authors,year,publicationDate,fieldsOfStudy,s2FieldsOfStudy,url"}
+{"queryId": "q_063", "query": "few shot object detection with vision transformers", "year": null, "fields": "paperId,title,abstract,authors,year,publicationDate,fieldsOfStudy,s2FieldsOfStudy,url"}
+{"queryId": "q_064", "query": "uncertainty aware semantic segmentation for autonomous driving", "year": null, "fields": "paperId,title,abstract,authors,year,publicationDate,fieldsOfStudy,s2FieldsOfStudy,url"}
+{"queryId": "q_065", "query": "offline reinforcement learning for sepsis treatment recommendation", "year": null, "fields": "paperId,title,abstract,authors,year,publicationDate,fieldsOfStudy,s2FieldsOfStudy,url"}
+{"queryId": "q_066", "query": "document level event extraction with large language models", "year": null, "fields": "paperId,title,abstract,authors,year,publicationDate,fieldsOfStudy,s2FieldsOfStudy,url"}
+{"queryId": "q_067", "query": "table question answering with retrieval and reranking", "year": null, "fields": "paperId,title,abstract,authors,year,publicationDate,fieldsOfStudy,s2FieldsOfStudy,url"}
+{"queryId": "q_068", "query": "debiased recommender systems with causal inference", "year": null, "fields": "paperId,title,abstract,authors,year,publicationDate,fieldsOfStudy,s2FieldsOfStudy,url"}
+{"queryId": "q_069", "query": "anomaly detection in industrial time series with transformers", "year": null, "fields": "paperId,title,abstract,authors,year,publicationDate,fieldsOfStudy,s2FieldsOfStudy,url"}
+{"queryId": "q_070", "query": "code generation with execution guided decoding", "year": null, "fields": "paperId,title,abstract,authors,year,publicationDate,fieldsOfStudy,s2FieldsOfStudy,url"}
+{"queryId": "q_071", "query": "weakly supervised medical image segmentation", "year": null, "fields": "paperId,title,abstract,authors,year,publicationDate,fieldsOfStudy,s2FieldsOfStudy,url"}
+{"queryId": "q_072", "query": "neural ranking for scientific paper recommendation", "year": null, "fields": "paperId,title,abstract,authors,year,publicationDate,fieldsOfStudy,s2FieldsOfStudy,url"}
+{"queryId": "q_073", "query": "speech emotion recognition with wav2vec pretraining", "year": null, "fields": "paperId,title,abstract,authors,year,publicationDate,fieldsOfStudy,s2FieldsOfStudy,url"}
+{"queryId": "q_074", "query": "graph contrastive learning for drug drug interaction prediction", "year": null, "fields": "paperId,title,abstract,authors,year,publicationDate,fieldsOfStudy,s2FieldsOfStudy,url"}
+{"queryId": "q_075", "query": "parameter efficient fine tuning for legal text classification", "year": null, "fields": "paperId,title,abstract,authors,year,publicationDate,fieldsOfStudy,s2FieldsOfStudy,url"}
+{"queryId": "q_076", "query": "multimodal foundation models for radiology report generation", "year": "2023-", "fields": "paperId,title,abstract,authors,year,publicationDate,fieldsOfStudy,s2FieldsOfStudy,url"}
+{"queryId": "q_077", "query": "retrieval augmented generation for biomedical question answering", "year": "2022-", "fields": "paperId,title,abstract,authors,year,publicationDate,fieldsOfStudy,s2FieldsOfStudy,url"}
+{"queryId": "q_078", "query": "graph neural networks for single cell RNA sequencing analysis", "year": "2021-", "fields": "paperId,title,abstract,authors,year,publicationDate,fieldsOfStudy,s2FieldsOfStudy,url"}
+{"queryId": "q_079", "query": "diffusion transformers for text to image generation", "year": "2023-", "fields": "paperId,title,abstract,authors,year,publicationDate,fieldsOfStudy,s2FieldsOfStudy,url"}
+{"queryId": "q_080", "query": "large language models for code repair", "year": "2023-", "fields": "paperId,title,abstract,authors,year,publicationDate,fieldsOfStudy,s2FieldsOfStudy,url"}
+{"queryId": "q_081", "query": "federated learning for diabetic retinopathy detection", "year": "2021-", "fields": "paperId,title,abstract,authors,year,publicationDate,fieldsOfStudy,s2FieldsOfStudy,url"}
+{"queryId": "q_082", "query": "vision language models for chart understanding", "year": "2022-", "fields": "paperId,title,abstract,authors,year,publicationDate,fieldsOfStudy,s2FieldsOfStudy,url"}
+{"queryId": "q_083", "query": "causal representation learning for reinforcement learning", "year": "2021-", "fields": "paperId,title,abstract,authors,year,publicationDate,fieldsOfStudy,s2FieldsOfStudy,url"}
+{"queryId": "q_084", "query": "self supervised learning for ECG classification", "year": "2021-", "fields": "paperId,title,abstract,authors,year,publicationDate,fieldsOfStudy,s2FieldsOfStudy,url"}
+{"queryId": "q_085", "query": "language agents for web navigation", "year": "2023-", "fields": "paperId,title,abstract,authors,year,publicationDate,fieldsOfStudy,s2FieldsOfStudy,url"}
+{"queryId": "q_086", "query": "test time adaptation for medical image segmentation", "year": "2021-", "fields": "paperId,title,abstract,authors,year,publicationDate,fieldsOfStudy,s2FieldsOfStudy,url"}
+{"queryId": "q_087", "query": "retrieval based long context question answering with large language models", "year": "2023-", "fields": "paperId,title,abstract,authors,year,publicationDate,fieldsOfStudy,s2FieldsOfStudy,url"}
+{"queryId": "q_088", "query": "graph neural networks for traffic forecasting with dynamic graphs", "year": "2020-", "fields": "paperId,title,abstract,authors,year,publicationDate,fieldsOfStudy,s2FieldsOfStudy,url"}
+{"queryId": "q_089", "query": "neural topic modeling for scientific literature analysis", "year": "2020-", "fields": "paperId,title,abstract,authors,year,publicationDate,fieldsOfStudy,s2FieldsOfStudy,url"}
+{"queryId": "q_090", "query": "few shot named entity recognition with large language models", "year": "2023-", "fields": "paperId,title,abstract,authors,year,publicationDate,fieldsOfStudy,s2FieldsOfStudy,url"}
+{"queryId": "q_091", "query": "protein language models for variant effect prediction", "year": "2021-", "fields": "paperId,title,abstract,authors,year,publicationDate,fieldsOfStudy,s2FieldsOfStudy,url"}
+{"queryId": "q_092", "query": "multimodal misinformation detection with transformers", "year": "2021-", "fields": "paperId,title,abstract,authors,year,publicationDate,fieldsOfStudy,s2FieldsOfStudy,url"}
+{"queryId": "q_093", "query": "parameter efficient fine tuning for multimodal large language models", "year": "2023-", "fields": "paperId,title,abstract,authors,year,publicationDate,fieldsOfStudy,s2FieldsOfStudy,url"}
+{"queryId": "q_094", "query": "reinforcement learning from AI feedback", "year": "2023-", "fields": "paperId,title,abstract,authors,year,publicationDate,fieldsOfStudy,s2FieldsOfStudy,url"}
+{"queryId": "q_095", "query": "tool augmented large language models for data analysis", "year": "2023-", "fields": "paperId,title,abstract,authors,year,publicationDate,fieldsOfStudy,s2FieldsOfStudy,url"}
+{"queryId": "q_096", "query": "uncertainty estimation in large language models", "year": "2022-", "fields": "paperId,title,abstract,authors,year,publicationDate,fieldsOfStudy,s2FieldsOfStudy,url"}
+{"queryId": "q_097", "query": "domain generalization for histopathology image classification", "year": "2021-", "fields": "paperId,title,abstract,authors,year,publicationDate,fieldsOfStudy,s2FieldsOfStudy,url"}
+{"queryId": "q_098", "query": "graph transformers for reaction prediction", "year": "2021-", "fields": "paperId,title,abstract,authors,year,publicationDate,fieldsOfStudy,s2FieldsOfStudy,url"}
+{"queryId": "q_099", "query": "self consistency decoding for mathematical reasoning", "year": "2023-", "fields": "paperId,title,abstract,authors,year,publicationDate,fieldsOfStudy,s2FieldsOfStudy,url"}
+{"queryId": "q_100", "query": "machine unlearning for large language models", "year": "2023-", "fields": "paperId,title,abstract,authors,year,publicationDate,fieldsOfStudy,s2FieldsOfStudy,url"}
