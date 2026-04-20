@@ -87,7 +87,7 @@ TBD
 - [Benny Yuan](https://github.com/bennyyuan12)
 - [Andrew Jiang](https://github.com/minghanminghan)
 - [Audrey McKnight](https://github.com/audrey-mcknight)
-- [Audrey McKnight](https://github.com/rushil-johal)
+- [Rushil Johal](https://github.com/rushil-johal)
 
 ---
 
