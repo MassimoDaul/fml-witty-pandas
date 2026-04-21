@@ -10,3 +10,4 @@ build/
 venv/
 pyrightconfig.json
 .claude/
+.codex/
