@@ -22,6 +22,7 @@ load_dotenv()
 
 # Whitelist — used to validate column args and prevent SQL injection.
 EMBEDDING_COLS: frozenset[str] = frozenset({
+    "nomic",
     "massimo_title",
     "massimo_abstract",
     "massimo_metadata",
