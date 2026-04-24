@@ -21,8 +21,7 @@
         <p class="eyebrow">Paper detail</p>
         <h1>{{ paper.title }}</h1>
         <p class="detail-meta">
-          {% if paper.authors %}{{ authors_line(paper.authors) }} · {% endif %}
-          {{ paper.published or "Publication date unavailable" }} · arXiv preprint
+          {{ paper.published or "Publication date unavailable" }}{% if paper.venue %} · {{ paper.venue }}{% endif %}
         </p>
         {% if paper.categories %}
         <ul class="tag-list">
@@ -35,8 +34,12 @@
 
       <aside class="detail-sidecard">
         <h2>Access</h2>
-        <a class="button-primary button-primary--full" href="https://arxiv.org/abs/{{ paper.arxiv_id }}" target="_blank" rel="noopener noreferrer">Open on arXiv</a>
-        <p class="sidebar-note">The current library indexes arXiv papers, so the source is open access by default.</p>
+        {% if paper.url %}
+        <a class="button-primary button-primary--full" href="{{ paper.url }}" target="_blank" rel="noopener noreferrer">Open on Semantic Scholar</a>
+        {% endif %}
+        {% if paper.venue %}
+        <p class="sidebar-note">Published in {{ paper.venue }}.</p>
+        {% endif %}
       </aside>
     </section>
 

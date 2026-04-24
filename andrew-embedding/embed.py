@@ -35,13 +35,13 @@ def embed(checkpoint_path: str = CHECKPOINT_PATH):
 
     print("Running inference...")
     with torch.no_grad():
-        z = model(data).cpu().numpy()  # (N, 768)
+        z = model(data).cpu().numpy()  # (N, 128)
 
     print(f"Exporting {len(corpus_ids)} embeddings to 'andrew' column...")
     conn = get_connection()
-    drop_ivf_indexes(conn)
+    drop_ivf_indexes(conn, 'andrew')
     upsert_embeddings(conn, 'andrew', list(zip(corpus_ids, z)))
-    build_ivf_indexes(conn)
+    build_ivf_indexes(conn, 'andrew')
     conn.close()
 
     print("Done.")

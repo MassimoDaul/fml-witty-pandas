@@ -14,6 +14,9 @@ import sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+WEIGHTS_DIR = Path(__file__).resolve().parent / "weights"
+WEIGHTS_DIR.mkdir(exist_ok=True)
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -28,7 +31,8 @@ from database.utils import get_connection, fetch_embeddings
 # ----------------------------
 # Config
 # ----------------------------
-DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
+assert torch.cuda.is_available(), "CUDA GPU required for training"
+DEVICE = "cuda"
 
 HIDDEN_DIM = 256
 OUT_DIM = 128       # must match vector(128) in DB schema
@@ -39,7 +43,7 @@ EPOCHS = 50
 BATCH_SIZE = 2048
 TAU = 0.1
 K_NEIGHBORS = 10
-CHECKPOINT_PATH = "checkpoint_best.pt"
+CHECKPOINT_PATH = str(WEIGHTS_DIR / "checkpoint_best.pt")
 
 
 # ----------------------------
