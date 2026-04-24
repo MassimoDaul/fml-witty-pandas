@@ -2,9 +2,17 @@
 Autoresearch orchestrator loop.
 """
 import os
+import sys
 import json
+import time
 from litellm import completion
-from tools import read_file, write_file, run_experiment, create_report, ANDREW_EMB_DIR
+from tools import read_file, write_file, run_experiment, create_report, ANDREW_EMB_DIR, PROJECT_ROOT
+from dotenv import load_dotenv
+
+_ = load_dotenv(PROJECT_ROOT / ".env")
+
+model = os.getenv("LITELLM_MODEL")
+api_key = os.getenv("LITELLM_API_KEY")
 
 def execute_tool_call(tool_call):
     function_name = tool_call.function.name
@@ -66,7 +74,7 @@ tools = [
         "type": "function",
         "function": {
             "name": "run_experiment",
-            "description": "Executes train.py, embed.py, and eval.py sequentially. Call this ONLY AFTER calling write_file to evaluate your newly written experiment.",
+            "description": "Executes train.py, embed.py, and eval.py sequentially. Call this to evaluate your changes.",
             "parameters": {
                 "type": "object",
                 "properties": {
@@ -79,7 +87,7 @@ tools = [
         "type": "function",
         "function": {
             "name": "create_report",
-            "description": "Generates a final assessment report comparing your eval results with previous best. Use this as the FINAL step of the iteration.",
+            "description": "Generates a final assessment report comparing your eval results with previous best. Use this to conclude an iteration.",
             "parameters": {
                 "type": "object",
                 "properties": {
@@ -92,50 +100,140 @@ tools = [
     }
 ]
 
+MAX_STEPS = 20
 system_prompt = f"""You are an autonomous AI research scientist optimizing a graph neural network embedding model.
-Your workflow for EACH iteration is strict:
-1. Examine the current code using `read_file` (typically `{str(ANDREW_EMB_DIR / 'train.py')}`).
-2. Formulate a hypothesis for improving the composite evaluation score.
-3. Use `write_file` exactly ONCE to overwrite `train.py` with your FULL, COMPLETE code. Avoid minor formatting edits; focus on real ML hyperparameters (e.g. learning rate, GNN layers, negative sampling, contrastive margins). We consider `write_file` heavily rate-limited, so use it wisely.
-4. Use `run_experiment` to evaluate your change.
-5. Use `create_report` to document the results, which will terminate your iteration.
+You have flexibility to explore, read files, write files (limited to andrew-embedding/train.py and andrew-embedding/autoresearch/EXPERIMENTS.md), and run experiments as needed to improve the composite evaluation score.
 
-Remember that you are strictly sandboxed. Repeatedly attempting to write files outside the sandbox or using placeholders in your code will result in immediate termination."""
+Your workflow involves:
+1. Examining the current code using `read_file` (e.g., `{str(ANDREW_EMB_DIR / 'train.py')}`).
+2. Formulating a hypothesis for improving the metrics.
+3. Modifying code using `write_file` (ensure complete code without placeholders).
+4. Evaluating changes using `run_experiment`.
+5. Documenting findings using `create_report`, which concludes the iteration.
+
+You have a budget of {MAX_STEPS} tool calls to complete your objectives. Once you have finalized your experiment and run the evaluations, invoke `create_report`."""
 
 def main():
-    # Example starting loop
-    model = os.getenv("LITELLM_MODEL", "gpt-4o")
-    
+    from tools import EXPERIMENTS_FILE
+    past_experiments = ""
+    if EXPERIMENTS_FILE.exists():
+        with open(EXPERIMENTS_FILE, "r", encoding="utf-8") as f:
+            past_experiments = f.read().strip()
+            
+    sys_prompt = system_prompt
+    if past_experiments:
+        sys_prompt += f"\n\nPast Experiments:\n{past_experiments}"
+
     messages = [
-        {"role": "system", "content": system_prompt},
+        {"role": "system", "content": sys_prompt},
         {"role": "user", "content": "Please start a new experiment loop to improve the model composite score. First, inspect train.py to devise an experiment, then run the cycle."}
     ]
     
     print("Starting autoresearch loop...")
-    MAX_STEPS = 10
     
     for step in range(MAX_STEPS):
         print(f"\n--- Step {step+1}/{MAX_STEPS} ---")
-        try:
-            response = completion(model=model, messages=messages, tools=tools)
-        except Exception as e:
-            print(f"LLM API Error: {e}")
+        
+        max_retries = 5
+        base_delay = 2
+        complete_content = ""
+        tool_calls_dict = {}
+        success = False
+        
+        for attempt in range(max_retries):
+            try:
+                response = completion(model=model, api_key=api_key, messages=messages, tools=tools, stream=True)
+                
+                print("\n[LLM] ", end="")
+                sys.stdout.flush()
+                
+                complete_content = ""
+                tool_calls_dict = {}
+                
+                for chunk in response:
+                    if not chunk.choices:
+                        continue
+                    delta = chunk.choices[0].delta
+                    
+                    if hasattr(delta, 'content') and delta.content is not None:
+                        complete_content += delta.content
+                        sys.stdout.write(delta.content)
+                        sys.stdout.flush()
+                        
+                    if hasattr(delta, 'tool_calls') and delta.tool_calls is not None:
+                        for tc in delta.tool_calls:
+                            index = tc.index
+                            if index not in tool_calls_dict:
+                                tool_calls_dict[index] = {
+                                    "id": tc.id,
+                                    "type": "function",
+                                    "function": {
+                                        "name": tc.function.name or "",
+                                        "arguments": ""
+                                    }
+                                }
+                                func_name = tc.function.name or ""
+                                sys.stdout.write(f"\n[LLM] Calling Tool: {func_name}\n[Tool Args] ")
+                                sys.stdout.flush()
+                                
+                            if hasattr(tc.function, 'arguments') and tc.function.arguments is not None:
+                                sys.stdout.write(tc.function.arguments)
+                                sys.stdout.flush()
+                                tool_calls_dict[index]["function"]["arguments"] += tc.function.arguments
+                
+                success = True
+                break
+            except Exception as e:
+                err_str = str(e)
+                if "429" in err_str or "503" in err_str or "RateLimitError" in err_str or "ServiceUnavailableError" in err_str or "MidStreamFallbackError" in err_str:
+                    if attempt == max_retries - 1:
+                        print(f"\nLLM API Error: Max retries reached. {e}")
+                        break
+                    sleep_time = base_delay * (2 ** attempt)
+                    print(f"\nLLM API Error (429/503): {e}. Retrying in {sleep_time}s...")
+                    time.sleep(sleep_time)
+                else:
+                    print(f"\nLLM API Error: {e}")
+                    break
+        
+        if not success:
+            print("\nError: Failed to get valid response from LLM.")
             break
             
-        message = response.choices[0].message
-        messages.append(message)
+        print() # Newline after response completes
         
-        if message.tool_calls:
-            for tool_call in message.tool_calls:
-                func_name = tool_call.function.name
-                print(f"[LLM] Called Tool: {func_name}")
+        message_dict = {
+            "role": "assistant",
+            "content": complete_content or None
+        }
+        
+        if tool_calls_dict:
+            message_dict["tool_calls"] = [tool_calls_dict[idx] for idx in sorted(tool_calls_dict.keys())]
+            
+        messages.append(message_dict)
+        
+        if tool_calls_dict:
+            for idx in sorted(tool_calls_dict.keys()):
+                tc_dict = tool_calls_dict[idx]
+                func_name = tc_dict["function"]["name"]
+                
+                # Mock a tool_call object for execute_tool_call
+                class MockFunction:
+                    def __init__(self, name, arguments):
+                        self.name = name
+                        self.arguments = arguments
+                class MockToolCall:
+                    def __init__(self, function):
+                        self.function = function
+                
+                mock_tool_call = MockToolCall(MockFunction(func_name, tc_dict["function"]["arguments"]))
                 
                 # Execute tool
-                result = execute_tool_call(tool_call)
+                result = execute_tool_call(mock_tool_call)
                 
                 # Log outcome appropriately
                 if func_name == "write_file":
-                    print(f"[Tool] write_file execution complete. ({len(result)} chars log)")
+                    print(f"[Tool] write_file execution complete. ({len(str(result))} chars log)")
                 elif func_name == "read_file":
                     print(f"[Tool] read_file read {len(str(result))} characters.")
                 else:
@@ -144,7 +242,7 @@ def main():
                 # Append tool result back to message history
                 messages.append({
                     "role": "tool",
-                    "tool_call_id": tool_call.id,
+                    "tool_call_id": tc_dict["id"],
                     "name": func_name,
                     "content": str(result)
                 })
@@ -154,9 +252,14 @@ def main():
                     print("\nAutoresearch iteration complete.")
                     return
         else:
-            print(f"[LLM] Content: {message.content}")
-            if "complete" in (message.content or "").lower():
+            if "complete" in (complete_content or "").lower():
                 break
 
 if __name__ == "__main__":
+    # response = completion(
+    #     model=model,
+    #     api_key=api_key,
+    #     messages=[{"role": "user", "content": "write code for saying hi from LiteLLM"}]
+    # )
+    # print(response)
     main()

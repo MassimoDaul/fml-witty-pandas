@@ -3,6 +3,7 @@ llm tools for autoresearch
 '''
 import os
 import subprocess
+import sys
 from pathlib import Path
 from litellm import completion
 
@@ -24,10 +25,10 @@ def read_file(path: str) -> str:
 def write_file(path: str, content: str) -> str:
     """Writes content to a file. Strictly limited to train.py in andrew-embedding."""
     target_path = Path(path).resolve()
-    allowed_path = (ANDREW_EMB_DIR / "train.py").resolve()
+    allowed_paths = [(ANDREW_EMB_DIR / "train.py").resolve(), (AUTORESEARCH_DIR / "EXPERIMENTS.md").resolve()]
     
-    if target_path != allowed_path:
-        return f"Error: write_file is sandboxed. You are only allowed to modify {allowed_path}. Refusing to write to {target_path}."
+    if target_path not in allowed_paths:
+        return f"Error: write_file is sandboxed. You are only allowed to modify {allowed_paths}. Refusing to write to {target_path}."
     
     try:
         with open(target_path, "w", encoding="utf-8") as f:
@@ -36,47 +37,64 @@ def write_file(path: str, content: str) -> str:
     except Exception as e:
         return f"Error writing file: {e}"
 
+def _run_and_stream(cmd, cwd):
+    output_lines = []
+    process = subprocess.Popen(
+        cmd, cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, bufsize=1, encoding='utf-8', errors='replace'
+    )
+    for line in process.stdout:
+        try:
+            sys.stdout.write(line)
+        except UnicodeEncodeError:
+            enc = sys.stdout.encoding or 'ascii'
+            sys.stdout.write(line.encode(enc, errors='replace').decode(enc))
+        sys.stdout.flush()
+        output_lines.append(line)
+    process.wait()
+    if process.returncode != 0:
+        raise subprocess.CalledProcessError(process.returncode, cmd, output="".join(output_lines))
+    return "".join(output_lines)
+
 def run_experiment(entrypoint: str = "") -> str:
     """Executes train.py, then embed.py, then eval.py, and returns the aggregated output."""
     output = []
     
     # 1. Run train.py
     try:
+        print("\n=== Running train.py ===")
         output.append("=== Running train.py ===")
-        res_train = subprocess.run(
-            ["python", "train.py"], 
-            cwd=str(ANDREW_EMB_DIR), 
-            capture_output=True, text=True, check=True
+        out_str = _run_and_stream(
+            [sys.executable, "train.py", "--autoresearch", "True"], 
+            cwd=str(ANDREW_EMB_DIR)
         )
-        output.append(res_train.stdout)
+        output.append(out_str)
     except subprocess.CalledProcessError as e:
-        return f"Error running train.py:\n{e.stdout}\n{e.stderr}"
+        return f"Error running train.py:\n{e.output}"
 
     # 2. Run embed.py
     try:
+        print("\n=== Running embed.py ===")
         output.append("\n=== Running embed.py ===")
-        res_embed = subprocess.run(
-            ["python", "embed.py"], 
-            cwd=str(ANDREW_EMB_DIR), 
-            capture_output=True, text=True, check=True
+        out_str = _run_and_stream(
+            [sys.executable, "embed.py", "--autoresearch", "True"], 
+            cwd=str(ANDREW_EMB_DIR)
         )
-        output.append(res_embed.stdout)
+        output.append(out_str)
     except subprocess.CalledProcessError as e:
-        return f"Error running embed.py:\n{e.stdout}\n{e.stderr}"
+        return f"Error running embed.py:\n{e.output}"
 
     # 3. Run eval.py
     try:
+        print("\n=== Running eval.py ===")
         output.append("\n=== Running eval.py ===")
-        # eval.py path requires quotes/escaping in terminal, but subprocess handles the list naturally
         eval_script = str(PROJECT_ROOT / "evaluation layer" / "v2" / "eval.py")
-        res_eval = subprocess.run(
-            ["python", eval_script], 
-            cwd=str(PROJECT_ROOT), 
-            capture_output=True, text=True, check=True
+        out_str = _run_and_stream(
+            [sys.executable, eval_script, "--autoresearch", "True"], 
+            cwd=str(PROJECT_ROOT)
         )
-        output.append(res_eval.stdout)
+        output.append(out_str)
     except subprocess.CalledProcessError as e:
-        return f"Error running eval.py:\n{e.stdout}\n{e.stderr}"
+        return f"Error running eval.py:\n{e.output}"
 
     return "\n".join(output)
 

@@ -14,10 +14,17 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import torch
 
 from database.utils import get_connection, drop_ivf_indexes, upsert_embeddings, build_ivf_indexes
-from train import build_graph, PaperGNN, CHECKPOINT_PATH, DEVICE
+from train import build_graph, PaperGNN, DEVICE, WEIGHTS_DIR
 
 
-def embed(checkpoint_path: str = CHECKPOINT_PATH):
+def embed(autoresearch=False):
+    if autoresearch:
+        checkpoint_path = str(Path(__file__).resolve().parent / "autoresearch" / "weights"  / "checkpoint_best.pt")
+        target_col = 'autoresearch_new'
+    else:
+        checkpoint_path = str(WEIGHTS_DIR / "checkpoint_best.pt")
+        target_col = 'andrew'
+
     print("Loading graph data...")
     data, _, _, corpus_ids, _ = build_graph()
     data = data.to(DEVICE)
@@ -37,11 +44,11 @@ def embed(checkpoint_path: str = CHECKPOINT_PATH):
     with torch.no_grad():
         z = model(data).cpu().numpy()  # (N, 128)
 
-    print(f"Exporting {len(corpus_ids)} embeddings to 'andrew' column...")
+    print(f"Exporting {len(corpus_ids)} embeddings to '{target_col}' column...")
     conn = get_connection()
-    drop_ivf_indexes(conn, 'andrew')
-    upsert_embeddings(conn, 'andrew', list(zip(corpus_ids, z)))
-    build_ivf_indexes(conn, 'andrew')
+    drop_ivf_indexes(conn, target_col)
+    upsert_embeddings(conn, target_col, list(zip(corpus_ids, z)))
+    build_ivf_indexes(conn, target_col)
     conn.close()
 
     print("Done.")
@@ -49,6 +56,8 @@ def embed(checkpoint_path: str = CHECKPOINT_PATH):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('--checkpoint', default=CHECKPOINT_PATH)
+    parser.add_argument('--autoresearch', type=str, choices=['True', 'False', 'true', 'false'], default='False')
     args = parser.parse_args()
-    embed(args.checkpoint)
+    
+    autoresearch_flag = args.autoresearch.lower() == 'true'
+    embed(autoresearch=autoresearch_flag)

@@ -207,7 +207,14 @@ def main():
     parser.add_argument("--sample",           type=int, default=SAMPLE_N)
     parser.add_argument("--nprobe",           type=int, default=NPROBE)
     parser.add_argument("--silhouette-sample",type=int, default=SILHOUETTE_N)
+    parser.add_argument('--autoresearch',     type=str, choices=['True', 'False', 'true', 'false'], default='False')
     args = parser.parse_args()
+
+    global COLUMNS
+    if args.autoresearch.lower() == 'true':
+        COLUMNS = ["andrew", "autoresearch", "autoresearch_new"]
+    elif "autoresearch" in COLUMNS:
+        COLUMNS.remove("autoresearch")
 
     random.seed(SEED)
     np.random.seed(SEED)
@@ -241,9 +248,9 @@ def main():
     results: dict[str, dict[str, float]] = {col: {} for col in COLUMNS}
 
     for col in COLUMNS:
-        print(f"\n{'─' * 44}")
+        print(f"\n{'-' * 44}")
         print(f"  {col.upper()}")
-        print(f"{'─' * 44}")
+        print(f"{'-' * 44}")
 
         print(f"  Author P@{args.k_pair}/MRR  (n={len(author_queries)}) ...", end=" ", flush=True)
         p_score, mrr_score = test_pair_metrics(
@@ -290,24 +297,40 @@ def main():
     ]
 
     w = 24
-    print(f"\n{'═' * 66}")
-    print(f"  {'Metric':<{w}} {'wt':>4} {'nomic':>10} {'andrew':>10} {'winner':>8}")
-    print(f"{'═' * 66}")
+    header_cols = " ".join([f"{c:>10}" for c in COLUMNS])
+    print(f"\n{'=' * (32 + 11 * len(COLUMNS) + 9)}")
+    print(f"  {'Metric':<{w}} {'wt':>4} {header_cols} {'winner':>8}")
+    print(f"{'=' * (32 + 11 * len(COLUMNS) + 9)}")
     for label, key, wt in metrics:
-        nv = results["nomic"][key]
-        av = results["andrew"][key]
-        if np.isnan(nv) and np.isnan(av):
+        vals = [results[c].get(key, float("nan")) for c in COLUMNS]
+        valid_vals = [(v, c) for v, c in zip(vals, COLUMNS) if not np.isnan(v)]
+        
+        if not valid_vals:
             winner = "n/a"
-        elif np.isnan(nv):
-            winner = "andrew"
-        elif np.isnan(av):
-            winner = "nomic"
         else:
-            winner = "nomic" if nv > av else ("andrew" if av > nv else "tie")
-        nv_s = f"{nv:.4f}" if not np.isnan(nv) else "   n/a"
-        av_s = f"{av:.4f}" if not np.isnan(av) else "   n/a"
-        print(f"  {label:<{w}} {wt:>4} {nv_s:>10} {av_s:>10} {winner:>8}")
-    print(f"{'═' * 66}")
+            max_v = max(v for v, _ in valid_vals)
+            winners = [c for v, c in valid_vals if v == max_v]
+            winner = "tie" if len(winners) > 1 else winners[0]
+                
+        vals_s = " ".join([f"{v:>10.4f}" if not np.isnan(v) else "       n/a" for v in vals])
+        print(f"  {label:<{w}} {wt:>4} {vals_s} {winner:>8}")
+    print(f"{'=' * (32 + 11 * len(COLUMNS) + 9)}")
+
+    if args.autoresearch.lower() == 'true':
+        c_auto_new = results["autoresearch_new"].get("composite", float("-nan"))
+        c_auto = results["autoresearch"].get("composite", float("-nan"))
+        c_andrew = results["andrew"].get("composite", float("-nan"))
+        
+        if not np.isnan(c_auto) and c_auto_new > c_andrew and c_auto_new > c_auto:
+            print("\n[SUCCESS] Autoresearch formulation beat both baselines! Updating database embeddings...")
+            conn = get_connection()
+            with conn.cursor() as cur:
+                cur.execute("UPDATE papers SET autoresearch = autoresearch_new")
+            conn.commit()
+            conn.close()
+            print("  Successfully copied 'autoresearch_new' to 'autoresearch' in postgres.")
+        else:
+            print("\n[REJECTED] Autoresearch did not strictly beat both baselines.")
 
 
 if __name__ == "__main__":

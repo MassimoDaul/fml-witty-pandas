@@ -28,6 +28,8 @@ EMBEDDING_COLS: dict[str, tuple[str, int]] = {
     "massimo_metadata": ("vector", 384),
     "andrew":           ("vector", 128),
     "audrey":           ("vector", 384),
+    "autoresearch":     ("vector", 128),
+    "autoresearch_new": ("vector", 128),
 }
 
 # IVF tuning defaults for ~25k papers (lists = rows / 1000).
