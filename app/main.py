@@ -300,7 +300,7 @@ def author_detail(
 def paper_related(request: Request, arxiv_id: str):
     with db_conn(request.app) as conn:
         with conn.cursor() as cur:
-            cur.execute("SELECT title, abstract FROM papers WHERE arxiv_id = %s", (arxiv_id,))
+            cur.execute("SELECT title, abstract FROM papers WHERE corpus_id = %s", (arxiv_id,))
             row = cur.fetchone()
         if not row:
             return HTMLResponse("<p>Paper not found.</p>")
@@ -312,7 +312,7 @@ def paper_related(request: Request, arxiv_id: str):
                 (
                     '<section class="state-panel state-panel--error">'
                     '<p class="eyebrow">Related papers unavailable</p>'
-                    "<h3>Semantic Scholar is not available right now.</h3>"
+                    "<h3>Search error</h3>"
                     f"<p>{escape(str(exc))}</p>"
                     "</section>"
                 )
@@ -336,21 +336,27 @@ def paper_detail(
     with db_conn(request.app) as conn:
         with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
             cur.execute(
-                "SELECT arxiv_id, title, abstract, categories, authors, published "
-                "FROM papers WHERE arxiv_id = %s",
+                "SELECT corpus_id, s2_paper_id, url, title, abstract, "
+                "fields_of_study, year, venue "
+                "FROM papers WHERE corpus_id = %s",
                 (arxiv_id,),
             )
             row = cur.fetchone()
     if not row:
         return HTMLResponse("<p>Paper not found in local database.</p>", status_code=404)
 
+    from query import PaperYear
+    year = row["year"]
     paper = {
-        "arxiv_id": row["arxiv_id"],
-        "title": row["title"],
-        "abstract": row["abstract"],
-        "categories": row["categories"] or [],
-        "authors": row["authors"] or [],
-        "published": str(row["published"]) if row["published"] else None,
+        "arxiv_id":    row["corpus_id"],
+        "s2_paper_id": row["s2_paper_id"],
+        "url":         row["url"] or "",
+        "title":       row["title"],
+        "abstract":    row["abstract"] or "",
+        "categories":  row["fields_of_study"] or [],
+        "authors":     [],
+        "published":   PaperYear(year) if year else None,
+        "venue":       row["venue"] or "",
     }
     fallback = "/results"
     return templates.TemplateResponse(
@@ -373,7 +379,7 @@ S2_FIELDS = (
 def _fetch_s2_paper(arxiv_id: str) -> tuple[Optional[dict], Optional[str]]:
     """Fetch a paper from Semantic Scholar with exponential-backoff retry on 429.
     Returns (body_dict, error_string) — exactly one will be non-None."""
-    url = f"https://api.semanticscholar.org/graph/v1/paper/ArXiv:{arxiv_id}"
+    url = f"https://api.semanticscholar.org/graph/v1/paper/CorpusId:{arxiv_id}"
     try:
         resp = None
         for attempt in range(4):
@@ -424,7 +430,7 @@ def _build_graph(center_id: str, refs: list, cites: list, in_db: set) -> dict:
     nodes = [{"id": center_id, "arxiv_id": center_id, "is_center": True, "is_citation": False, "in_db": True}]
     links = []
     for n in refs + cites:
-        nodes.append({**n, "in_db": n["arxiv_id"] in in_db if n["arxiv_id"] else False, "is_center": False})
+        nodes.append({**n, "in_db": n["s2_id"] in in_db if n["s2_id"] else False, "is_center": False})
         if n["is_citation"]:
             links.append({"source": n["id"], "target": center_id, "is_citation": True})
         else:
@@ -446,12 +452,12 @@ def paper_references(request: Request, arxiv_id: str):
     refs = _parse_s2_papers(body.get("references") or [], False)
     cites = _parse_s2_papers(body.get("citations") or [], True)
 
-    all_arxiv_ids = [n["arxiv_id"] for n in refs + cites if n["arxiv_id"]]
+    all_s2_ids = [n["s2_id"] for n in refs + cites if n["s2_id"]]
     in_db = set()
-    if all_arxiv_ids:
+    if all_s2_ids:
         with db_conn(request.app) as conn:
             with conn.cursor() as cur:
-                cur.execute("SELECT arxiv_id FROM papers WHERE arxiv_id = ANY(%s)", (all_arxiv_ids,))
+                cur.execute("SELECT s2_paper_id FROM papers WHERE s2_paper_id = ANY(%s)", (all_s2_ids,))
                 in_db = {row[0] for row in cur.fetchall()}
 
     response_data = {

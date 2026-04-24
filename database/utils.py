@@ -20,19 +20,18 @@ from psycopg2.extensions import connection as PGConnection
 
 load_dotenv()
 
-# Whitelist — used to validate column args and prevent SQL injection.
-EMBEDDING_COLS: frozenset[str] = frozenset({
-    "nomic",
-    "massimo_title",
-    "massimo_abstract",
-    "massimo_metadata",
-    "andrew",
-    "audrey",
-})
+# Maps column name → (stored_type, dimension).
+EMBEDDING_COLS: dict[str, tuple[str, int]] = {
+    "nomic":            ("vector", 384),
+    "massimo_title":    ("vector", 384),
+    "massimo_abstract": ("vector", 384),
+    "massimo_metadata": ("vector", 384),
+    "andrew":           ("vector", 128),
+    "audrey":           ("vector", 384),
+}
 
-# IVF tuning defaults for ~25k papers at 768 dims.
-NLIST: int = 100
-_OPS: str = "vector_cosine_ops"
+# IVF tuning defaults for ~25k papers (lists = rows / 1000).
+NLIST: int = 25
 _INSERT_BATCH: int = 500
 
 
@@ -49,10 +48,7 @@ def get_connection() -> PGConnection:
 
 def _validate_col(column: str) -> None:
     if column not in EMBEDDING_COLS:
-        raise ValueError(
-            f"Unknown embedding column {column!r}. "
-            f"Valid columns: {sorted(EMBEDDING_COLS)}"
-        )
+        raise ValueError(f"Unknown embedding column {column!r}. Valid columns: {sorted(EMBEDDING_COLS)}")
 
 def _validate_int(name: str, value: int, lo: int, hi: int) -> None:
     if not isinstance(value, int) or not (lo <= value <= hi):
@@ -76,8 +72,8 @@ def fetch_embeddings(
                     when None.
 
     Returns:
-        Dict mapping corpus_id to a float32 numpy array of shape (768,).
-        Papers with a NULL embedding in this column are excluded.
+        Dict mapping corpus_id to a float32 numpy array. Shape is (384,) for
+        384-dim columns and (128,) for andrew. NULL rows are excluded.
     """
     _validate_col(column)
     with conn.cursor() as cur:
@@ -91,7 +87,7 @@ def fetch_embeddings(
                 f"WHERE corpus_id = ANY(%s) AND {column} IS NOT NULL",
                 (corpus_ids,),
             )
-        return {row[0]: np.array(row[1], dtype=np.float32) for row in cur.fetchall()}
+        return {row[0]: np.array(row[1].tolist(), dtype=np.float32) for row in cur.fetchall()}
 
 
 def get_unembedded(conn: PGConnection, column: str) -> list[str]:
@@ -125,9 +121,10 @@ def upsert_embeddings(
     """
     Write embeddings to the given column for each (corpus_id, vector) pair.
 
-    Always call drop_ivf_indexes() before this and build_ivf_indexes() after
-    a bulk write. IVF centroids are computed once at index-build time; writing
-    rows without rebuilding leaves the index's cluster structure stale.
+    Always call drop_ivf_indexes(conn, column) before this and
+    build_ivf_indexes(conn, column) after a bulk write. IVF centroids are
+    computed once at index-build time; writing rows without rebuilding leaves
+    the index's cluster structure stale.
 
     Args:
         conn:           Active database connection from get_connection().
@@ -149,42 +146,44 @@ def upsert_embeddings(
 
 # ── Index management ──────────────────────────────────────────────────────────
 
-def build_ivf_indexes(conn: PGConnection, nlist: int = NLIST) -> None:
+def build_ivf_indexes(conn: PGConnection, column: str, nlist: int = NLIST) -> None:
     """
-    Create IVF Flat indexes on all 5 embedding columns using cosine distance.
+    Create an IVF Flat index on the given embedding column using vector cosine distance.
 
-    Call this AFTER a column's embeddings are fully written. Rows with a NULL
+    Call this AFTER the column's embeddings are fully written. Rows with a NULL
     embedding are excluded from the index automatically. Building on partial
     data produces poor centroids that do not improve as more rows are added —
     always wait until the column is complete.
 
     Args:
-        conn:  Active database connection from get_connection().
-        nlist: Number of IVF cluster centroids. Default 100 is tuned for
-               ~25k papers; increase proportionally if the corpus grows.
+        conn:   Active database connection from get_connection().
+        column: One of EMBEDDING_COLS.
+        nlist:  Number of IVF cluster centroids. Default 25 is tuned for ~25k papers.
     """
+    _validate_col(column)
     _validate_int("nlist", nlist, 1, 32768)
+    col_expr = f"{column} vector_cosine_ops"
     with conn.cursor() as cur:
-        for col in EMBEDDING_COLS:
-            cur.execute(f"""
-                CREATE INDEX IF NOT EXISTS papers_{col}_ivf
-                ON papers
-                USING ivfflat ({col} {_OPS})
-                WITH (lists = {nlist})
-            """)
+        cur.execute("SET maintenance_work_mem = '32MB'")
+        cur.execute(f"""
+            CREATE INDEX IF NOT EXISTS papers_{column}_ivf
+            ON papers
+            USING ivfflat ({col_expr})
+            WITH (lists = {nlist})
+        """)
     conn.commit()
 
 
-def drop_ivf_indexes(conn: PGConnection) -> None:
+def drop_ivf_indexes(conn: PGConnection, column: str) -> None:
     """
-    Drop all IVF indexes on the embedding columns.
+    Drop the IVF index on the given embedding column.
 
     Call this before bulk-writing embeddings. The standard workflow is:
         drop_ivf_indexes → upsert_embeddings → build_ivf_indexes
     """
+    _validate_col(column)
     with conn.cursor() as cur:
-        for col in EMBEDDING_COLS:
-            cur.execute(f"DROP INDEX IF EXISTS papers_{col}_ivf")
+        cur.execute(f"DROP INDEX IF EXISTS papers_{column}_ivf")
     conn.commit()
 
 
@@ -230,14 +229,13 @@ def search_similar(
     Args:
         conn:      Active database connection from get_connection().
         column:    One of EMBEDDING_COLS.
-        query_vec: 768-dim float32 query embedding (already L2-normalised if
-                   using nomic-embed-text-v1.5 with normalize=True).
+        query_vec: Query embedding matching the column's dimension (384 for
+                   halfvec columns, 128 for andrew). Should be L2-normalised.
         k:         Number of nearest neighbours to return.
         nprobe:    IVF clusters to probe per query. Higher = better recall at
-                   the cost of latency. At nlist=100 on 25k vectors:
+                   the cost of latency. At nlist=25 on 25k vectors:
                      nprobe=10 → ~95% recall   (recommended default)
-                     nprobe=30 → ~99% recall
-                     nprobe=100 → exact (defeats the index)
+                     nprobe=25 → ~99% recall   (exact at nlist=25)
 
     Returns:
         List of {"corpus_id": str, "title": str, "dist": float} sorted by

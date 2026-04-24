@@ -37,12 +37,12 @@ def init_db():
                     citation_count   INT DEFAULT 0,
                     reference_count  INT DEFAULT 0,
                     fields_of_study  TEXT[],
-                    nomic            vector(768),   -- nomic(title + abstract)
-                    massimo_title    vector(768),
-                    massimo_abstract vector(768),
-                    massimo_metadata vector(768),
+                    nomic            vector(384),
+                    massimo_title    vector(384),
+                    massimo_abstract vector(384),
+                    massimo_metadata vector(384),
                     andrew           vector(128),
-                    audrey           vector(768),
+                    audrey           vector(384),
                     inserted_at      TIMESTAMPTZ DEFAULT now()
                 );
             """)
