@@ -37,6 +37,7 @@ def init_db():
                     citation_count   INT DEFAULT 0,
                     reference_count  INT DEFAULT 0,
                     fields_of_study  TEXT[],
+                    author_ids       TEXT[],        -- GIN index directly on papers
                     nomic            vector(384),
                     massimo_title    vector(384),
                     massimo_abstract vector(384),
@@ -45,6 +46,8 @@ def init_db():
                     audrey           vector(384),
                     inserted_at      TIMESTAMPTZ DEFAULT now()
                 );
+                CREATE INDEX IF NOT EXISTS idx_papers_author_ids
+                ON papers USING GIN (author_ids);
             """)
         conn.commit()
         print("Database initialized.")
