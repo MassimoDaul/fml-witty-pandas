@@ -7,6 +7,7 @@ python-dotenv
 tqdm
 kaggle
 einops
+openai
 
 # web app
 fastapi
