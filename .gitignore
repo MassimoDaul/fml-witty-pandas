@@ -11,3 +11,4 @@ venv/
 pyrightconfig.json
 .claude/
 .codex/
+.vscode
