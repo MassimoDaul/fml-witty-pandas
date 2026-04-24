@@ -46,7 +46,7 @@ def _get_model() -> SentenceTransformer:
 
 def embed_query(text: str) -> np.ndarray:
     vec = _get_model().encode(TASK_PREFIX + text, normalize_embeddings=True)
-    return vec.astype(np.float32)
+    return vec[:384].astype(np.float32)
 
 
 def search(query: str, k: int = 10, nprobe: int = 10) -> list[dict]:

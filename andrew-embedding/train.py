@@ -1,16 +1,20 @@
 '''
 Heterogeneous graph (papers, venues, fields)
-Semantic KNN edges from massimo_abstract embeddings
+Semantic KNN edges from nomic embeddings
 HGT (GAT-style) model with contrastive training
 Per-epoch checkpointing when both train and val loss improve
 
-TODO:
-- populate 'nomic' column with naive nomic document embedding
-- run training
-- evaluate gat vs nomic
+Improvements over v1:
+- K_NEIGHBORS 10 → 20 for a richer graph
+- Venue/field node features: Nomic-averaged 384-dim instead of random 64-dim
+- Hard negative mining: pool of NEG_POOL_SIZE candidates per anchor, pick hardest
+- Field-level contrastive term weighted at FIELD_LOSS_WEIGHT
+- Learnable blend weight α (sigmoid-gated, init ≈ 0.70)
+- STEPS_PER_EPOCH inner gradient steps sharing one GNN forward pass per epoch
 '''
 
 import sys
+import random
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
@@ -24,7 +28,6 @@ from torch_geometric.data import HeteroData
 from torch_geometric.nn import HGTConv
 from torch_geometric.transforms import ToUndirected
 import numpy as np
-import random
 
 from database.utils import get_connection, fetch_embeddings
 
@@ -34,16 +37,20 @@ from database.utils import get_connection, fetch_embeddings
 assert torch.cuda.is_available(), "CUDA GPU required for training"
 DEVICE = "cuda"
 
-HIDDEN_DIM = 256
-OUT_DIM = 128       # must match vector(128) in DB schema
-NUM_HEADS = 4
-NUM_LAYERS = 2
-LR = 1e-3
-EPOCHS = 50
-BATCH_SIZE = 2048
-TAU = 0.1
-K_NEIGHBORS = 10
-CHECKPOINT_PATH = str(WEIGHTS_DIR / "checkpoint_best.pt")
+HIDDEN_DIM       = 256
+OUT_DIM          = 128        # must match vector(128) in DB schema
+NUM_HEADS        = 4
+NUM_LAYERS       = 2
+LR               = 1e-3
+EPOCHS           = 50
+BATCH_SIZE       = 2048
+TAU              = 0.1
+K_NEIGHBORS      = 20         # was 10
+STEPS_PER_EPOCH  = 10         # inner gradient steps sharing one forward pass
+FIELD_LOSS_WEIGHT = 0.3       # weight for field-level contrastive term
+NEG_POOL_SIZE    = 10         # candidates per anchor for hard negative mining
+ALPHA_INIT       = 0.847      # sigmoid(0.847) ≈ 0.70, matches original fixed blend
+CHECKPOINT_PATH  = str(WEIGHTS_DIR / "checkpoint_best.pt")
 
 
 # ----------------------------
@@ -116,6 +123,31 @@ def load_data():
     num_venues = max(len(venue_to_idx), 1)
     num_fields = max(len(field_to_idx), 1)
 
+    # Venue features: L2-normalised average of member paper Nomic embeddings
+    venue_emb = np.zeros((num_venues, 384), dtype=np.float32)
+    venue_cnt = np.zeros(num_venues, dtype=np.float32)
+    for pidx, vidx in zip(paper_venue_src, paper_venue_dst):
+        venue_emb[vidx] += paper_embeddings[pidx]
+        venue_cnt[vidx] += 1
+    venue_cnt = np.maximum(venue_cnt, 1)
+    venue_emb /= venue_cnt[:, None]
+    venue_emb /= np.linalg.norm(venue_emb, axis=1, keepdims=True) + 1e-8
+
+    # Field features: L2-normalised average of member paper Nomic embeddings
+    field_emb = np.zeros((num_fields, 384), dtype=np.float32)
+    field_cnt = np.zeros(num_fields, dtype=np.float32)
+    for pidx, fidx in zip(paper_field_src, paper_field_dst):
+        field_emb[fidx] += paper_embeddings[pidx]
+        field_cnt[fidx] += 1
+    field_cnt = np.maximum(field_cnt, 1)
+    field_emb /= field_cnt[:, None]
+    field_emb /= np.linalg.norm(field_emb, axis=1, keepdims=True) + 1e-8
+
+    # field_to_papers: used for field-level contrastive sampling
+    field_to_papers: dict[int, list[int]] = {}
+    for pidx, fidx in zip(paper_field_src, paper_field_dst):
+        field_to_papers.setdefault(fidx, []).append(pidx)
+
     paper_venue_edges = (
         np.array([paper_venue_src, paper_venue_dst], dtype=np.int64)
         if paper_venue_src else np.zeros((2, 0), dtype=np.int64)
@@ -133,7 +165,7 @@ def load_data():
     perm = np.random.permutation(n_edges)
     split = int(0.8 * n_edges)
     train_edges = knn_edges[:, perm[:split]]
-    val_edges = knn_edges[:, perm[split:]]
+    val_edges   = knn_edges[:, perm[split:]]
     print(f"KNN edges: {n_edges} total | {train_edges.shape[1]} train | {val_edges.shape[1]} val")
 
     return (
@@ -145,6 +177,9 @@ def load_data():
         num_venues,
         num_fields,
         corpus_ids,
+        venue_emb,
+        field_emb,
+        field_to_papers,
     )
 
 
@@ -161,12 +196,15 @@ def build_graph():
         num_venues,
         num_fields,
         corpus_ids,
+        venue_emb,
+        field_emb,
+        field_to_papers,
     ) = load_data()
 
     data = HeteroData()
     data['paper'].x = torch.tensor(paper_embeddings)
-    data['venue'].x = torch.randn(num_venues, 64)
-    data['field'].x = torch.randn(num_fields, 64)
+    data['venue'].x = torch.tensor(venue_emb)   # 384-dim semantic features
+    data['field'].x = torch.tensor(field_emb)   # 384-dim semantic features
 
     # All KNN edges in graph for message passing; train/val split is for loss only
     all_knn = np.hstack([train_edges, val_edges])
@@ -177,9 +215,9 @@ def build_graph():
     data = ToUndirected()(data)
 
     train_edge_index = torch.tensor(train_edges, dtype=torch.long)
-    val_edge_index = torch.tensor(val_edges, dtype=torch.long)
+    val_edge_index   = torch.tensor(val_edges,   dtype=torch.long)
 
-    return data, train_edge_index, val_edge_index, corpus_ids
+    return data, train_edge_index, val_edge_index, corpus_ids, field_to_papers
 
 
 # ----------------------------
@@ -190,9 +228,9 @@ class PaperGNN(nn.Module):
         super().__init__()
 
         self.lin_dict = nn.ModuleDict({
-            'paper': nn.Linear(768, HIDDEN_DIM),
-            'venue': nn.Linear(64, HIDDEN_DIM),
-            'field': nn.Linear(64, HIDDEN_DIM),
+            'paper': nn.Linear(384, HIDDEN_DIM),
+            'venue': nn.Linear(384, HIDDEN_DIM),  # semantic features, was 64-dim random
+            'field': nn.Linear(384, HIDDEN_DIM),  # semantic features, was 64-dim random
         })
 
         self.convs = nn.ModuleList([
@@ -200,8 +238,9 @@ class PaperGNN(nn.Module):
             for _ in range(NUM_LAYERS)
         ])
 
-        self.out = nn.Linear(HIDDEN_DIM, OUT_DIM)
-        self.paper_proj = nn.Linear(768, OUT_DIM)
+        self.out        = nn.Linear(HIDDEN_DIM, OUT_DIM)
+        self.paper_proj = nn.Linear(384, OUT_DIM)
+        self.alpha      = nn.Parameter(torch.tensor(ALPHA_INIT))  # learned blend weight
 
     def forward(self, data):
         x_dict = {k: self.lin_dict[k](data[k].x) for k in data.node_types}
@@ -210,19 +249,54 @@ class PaperGNN(nn.Module):
             x_dict = conv(x_dict, data.edge_index_dict)
 
         gnn_out = self.out(x_dict['paper'])
-        base = self.paper_proj(data['paper'].x)
+        base    = self.paper_proj(data['paper'].x)
 
-        return 0.7 * gnn_out + 0.3 * base
+        alpha = torch.sigmoid(self.alpha)
+        return alpha * gnn_out + (1 - alpha) * base
 
 
 # ----------------------------
 # Sampling
 # ----------------------------
-def sample_batch(edge_index, num_nodes, batch_size):
-    idx = torch.randint(0, edge_index.size(1), (batch_size,))
+def sample_batch(edge_index, z, num_nodes, batch_size):
+    """Sample positive pairs from KNN edges; mine hard negatives from a pool."""
+    idx = torch.randint(0, edge_index.size(1), (batch_size,), device=edge_index.device)
     src = edge_index[0, idx]
     pos = edge_index[1, idx]
-    neg = torch.randint(0, num_nodes, (batch_size,), device=edge_index.device)
+
+    with torch.no_grad():
+        neg_pool = torch.randint(0, num_nodes, (batch_size, NEG_POOL_SIZE), device=z.device)
+        # Replace any pool entry that coincides with the true positive
+        clash = neg_pool == pos.unsqueeze(1)
+        if clash.any():
+            neg_pool[clash] = torch.randint(0, num_nodes, (int(clash.sum()),), device=z.device)
+
+        src_emb  = F.normalize(z[src],           dim=1).unsqueeze(1)         # (B, 1, D)
+        pool_emb = F.normalize(z[neg_pool.view(-1)], dim=1)                  # (B*P, D)
+        pool_emb = pool_emb.view(batch_size, NEG_POOL_SIZE, -1)              # (B, P, D)
+        pool_sim = (src_emb * pool_emb).sum(dim=2)                           # (B, P)
+        hard_idx = pool_sim.argmax(dim=1)
+        neg = neg_pool[torch.arange(batch_size, device=z.device), hard_idx]
+
+    return src, pos, neg
+
+
+def sample_field_batch(field_to_papers: dict, num_nodes: int, batch_size: int, device: str):
+    """Sample same-field positive pairs with random negatives."""
+    eligible = [(fidx, papers) for fidx, papers in field_to_papers.items() if len(papers) >= 2]
+    if not eligible:
+        return None, None, None
+
+    src_list, pos_list = [], []
+    for _ in range(batch_size):
+        _, papers = random.choice(eligible)
+        a, b = random.sample(papers, 2)
+        src_list.append(a)
+        pos_list.append(b)
+
+    src = torch.tensor(src_list, dtype=torch.long, device=device)
+    pos = torch.tensor(pos_list, dtype=torch.long, device=device)
+    neg = torch.randint(0, num_nodes, (batch_size,), device=device)
     return src, pos, neg
 
 
@@ -266,49 +340,74 @@ def recall_at_k(emb, edge_index, k=20, max_eval=2000):
 # Training
 # ----------------------------
 def train():
-    data, train_edge_index, val_edge_index, corpus_ids = build_graph()
+    data, train_edge_index, val_edge_index, corpus_ids, field_to_papers = build_graph()
     data = data.to(DEVICE)
     train_edge_index = train_edge_index.to(DEVICE)
-    val_edge_index = val_edge_index.to(DEVICE)
+    val_edge_index   = val_edge_index.to(DEVICE)
 
-    model = PaperGNN(data.metadata()).to(DEVICE)
+    model     = PaperGNN(data.metadata()).to(DEVICE)
     optimizer = torch.optim.Adam(model.parameters(), lr=LR)
 
     best_train_loss = float('inf')
-    best_val_loss = float('inf')
+    best_val_loss   = float('inf')
 
     for epoch in range(EPOCHS):
         model.train()
-        optimizer.zero_grad()
+
+        # One GNN forward pass; STEPS_PER_EPOCH gradient steps reuse the same z.
+        # Backward correctly propagates through the retained graph each step since
+        # PyTorch uses saved intermediate activations (not live parameter values)
+        # to compute ∂L/∂W — the staleness is in z's values, not the gradients.
         z = model(data)
-        src, pos, neg = sample_batch(train_edge_index, z.size(0), BATCH_SIZE)
-        train_loss = contrastive_loss(z, src, pos, neg)
-        train_loss.backward()
-        optimizer.step()
+        total_train_loss = 0.0
+
+        for step in range(STEPS_PER_EPOCH):
+            optimizer.zero_grad()
+
+            src, pos, neg = sample_batch(train_edge_index, z, z.size(0), BATCH_SIZE)
+            knn_loss = contrastive_loss(z, src, pos, neg)
+
+            f_src, f_pos, f_neg = sample_field_batch(
+                field_to_papers, z.size(0), BATCH_SIZE // 4, DEVICE
+            )
+            field_loss = (
+                contrastive_loss(z, f_src, f_pos, f_neg)
+                if f_src is not None
+                else torch.tensor(0.0, device=DEVICE)
+            )
+
+            loss = knn_loss + FIELD_LOSS_WEIGHT * field_loss
+            loss.backward(retain_graph=(step < STEPS_PER_EPOCH - 1))
+            optimizer.step()
+            total_train_loss += loss.item()
+
+        avg_train_loss = total_train_loss / STEPS_PER_EPOCH
 
         model.eval()
         with torch.no_grad():
-            z_eval = model(data)
+            z_eval  = model(data)
             val_neg = torch.randint(0, z_eval.size(0), (val_edge_index.size(1),), device=DEVICE)
-            val_loss = contrastive_loss(z_eval, val_edge_index[0], val_edge_index[1], val_neg)
+            val_loss = contrastive_loss(z_eval, val_edge_index[0], val_edge_index[1], val_neg).item()
 
-        tl, vl = train_loss.item(), val_loss.item()
-
-        if tl < best_train_loss and vl < best_val_loss:
-            best_train_loss, best_val_loss = tl, vl
+        if avg_train_loss < best_train_loss and val_loss < best_val_loss:
+            best_train_loss, best_val_loss = avg_train_loss, val_loss
             torch.save({
                 'epoch': epoch,
                 'model_state_dict': model.state_dict(),
                 'optimizer_state_dict': optimizer.state_dict(),
-                'train_loss': tl,
-                'val_loss': vl,
+                'train_loss': avg_train_loss,
+                'val_loss': val_loss,
                 'corpus_ids': corpus_ids,
             }, CHECKPOINT_PATH)
-            print(f"  [checkpoint saved epoch={epoch} train={tl:.4f} val={vl:.4f}]")
+            print(f"  [checkpoint saved epoch={epoch} train={avg_train_loss:.4f} val={val_loss:.4f}]")
 
         if epoch % 5 == 0:
+            alpha  = torch.sigmoid(model.alpha).item()
             recall = recall_at_k(z_eval, train_edge_index, k=20)
-            print(f"Epoch {epoch:03d} | Train: {tl:.4f} | Val: {vl:.4f} | Recall@20: {recall:.4f}")
+            print(
+                f"Epoch {epoch:03d} | Train: {avg_train_loss:.4f} | Val: {val_loss:.4f} "
+                f"| Recall@20: {recall:.4f} | α={alpha:.3f}"
+            )
 
     return model, data, corpus_ids
 

@@ -19,7 +19,7 @@ from train import build_graph, PaperGNN, CHECKPOINT_PATH, DEVICE
 
 def embed(checkpoint_path: str = CHECKPOINT_PATH):
     print("Loading graph data...")
-    data, _, _, corpus_ids = build_graph()
+    data, _, _, corpus_ids, _ = build_graph()
     data = data.to(DEVICE)
 
     print(f"Loading checkpoint: {checkpoint_path}")
