@@ -37,12 +37,15 @@ def init_db():
                     citation_count   INT DEFAULT 0,
                     reference_count  INT DEFAULT 0,
                     fields_of_study  TEXT[],
+                    subfields        TEXT[],
                     author_ids       TEXT[],        -- GIN index directly on papers
                     nomic            vector(384),
                     massimo_title    vector(384),
                     massimo_abstract vector(384),
                     massimo_metadata vector(384),
                     andrew           vector(128),
+                    autoresearch     vector(128),
+                    autoresearch_new vector(128),
                     audrey           vector(384),
                     inserted_at      TIMESTAMPTZ DEFAULT now()
                 );
