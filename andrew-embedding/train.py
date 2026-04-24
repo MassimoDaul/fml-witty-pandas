@@ -354,15 +354,11 @@ def train():
     for epoch in range(EPOCHS):
         model.train()
 
-        # One GNN forward pass; STEPS_PER_EPOCH gradient steps reuse the same z.
-        # Backward correctly propagates through the retained graph each step since
-        # PyTorch uses saved intermediate activations (not live parameter values)
-        # to compute ∂L/∂W — the staleness is in z's values, not the gradients.
-        z = model(data)
         total_train_loss = 0.0
 
         for step in range(STEPS_PER_EPOCH):
             optimizer.zero_grad()
+            z = model(data)
 
             src, pos, neg = sample_batch(train_edge_index, z, z.size(0), BATCH_SIZE)
             knn_loss = contrastive_loss(z, src, pos, neg)
@@ -377,7 +373,7 @@ def train():
             )
 
             loss = knn_loss + FIELD_LOSS_WEIGHT * field_loss
-            loss.backward(retain_graph=(step < STEPS_PER_EPOCH - 1))
+            loss.backward()
             optimizer.step()
             total_train_loss += loss.item()
 
