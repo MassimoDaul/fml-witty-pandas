@@ -16,7 +16,7 @@ The benchmark is intended to answer questions like:
 - Which pipeline gives cleaner top-10 results?
 - Which pipeline ranks strong papers better?
 - Which pipeline is better for broad exploratory search?
-- Which pipeline handles explicit time filters correctly?
+- Which pipeline contributes useful papers beyond what other runs retrieve?
 - Which pipeline is strongest for different query types?
 
 This README covers:
@@ -39,7 +39,6 @@ For this project, the evaluated object is the **final search pipeline output**, 
 A system is considered the **evaluated pipeline** if it includes everything from:
 
 - the input query text
-- any explicit user-selected time filter
 - query preprocessing or rewriting
 - retrieval
 - reranking
@@ -138,18 +137,18 @@ A good result list for a specific query should:
 - contain little off-topic drift
 - place the strongest papers early in the ranking
 
-### 3.4 Time-filter scenarios
+### 3.4 Query buckets
 
-Time filtering is treated as a **scenario modifier**, not as a separate main query bucket.
+The evaluator reports the two main query types separately:
 
-The benchmark therefore spans four scenarios:
+- broad exploration
+- specific technical
 
-- broad, no time filter
-- broad, time-filtered
-- specific, no time filter
-- specific, time-filtered
-
-This design reflects the actual product more accurately than a separate "recent-work" bucket. If the user explicitly selects a date range, the evaluation should treat that date range as a **constraint** on the search rather than a vague notion of recency.
+Earlier drafts also split results into time-filtered and unfiltered scenarios.
+That is no longer part of the evaluation contract. A `year` field can still
+exist in benchmark files for pipeline compatibility, but the evaluator does not
+compute a standalone time-filter metric or a filtered/unfiltered reporting
+bucket.
 
 ### 3.5 Public benchmark policy
 
@@ -181,19 +180,17 @@ Each query object should include only the fields the search system needs at infe
 
 - `query_id` — unique string identifier for the query
 - `query_text` — the natural-language search query to run
-- `time_filter` — either `null` or an object describing the allowed year range
 
 Expected public queries format:
 
 ```json
-{"query_id":"q_001","query_text":"machine learning for healthcare","time_filter":null}
-{"query_id":"q_002","query_text":"clinical foundation models","time_filter":{"start_year":2023,"end_year":2026}}
+{"query_id":"q_001","query_text":"machine learning for healthcare"}
+{"query_id":"q_002","query_text":"clinical foundation models"}
 ```
 
 Notes:
 
 - Teammates are expected to run **all** queries in this file.
-- Teammates should treat `time_filter` as a hard search constraint when it is present.
 - Query type labels such as `broad` or `specific` are evaluator metadata and are **not required** as model inputs.
 
 The paper metadata file is provided so teams can resolve the paper IDs used by the evaluator. At minimum it should contain:
@@ -236,11 +233,10 @@ Required submission shape:
 
 For every query in `benchmark_queries.jsonl`, the team pipeline is expected to:
 
-1. read `query_id`, `query_text`, and `time_filter`
+1. read `query_id` and `query_text`
 2. run the full local search pipeline
 3. return exactly 10 ranked papers from the frozen corpus
-4. respect the time filter if it is present
-5. output only canonical `paper_id` values from the shared corpus mapping
+4. output only canonical `paper_id` values from the shared corpus mapping
 
 The evaluation layer expects the team system to output the **final user-facing ranking**, not intermediate retrieval candidates.
 
@@ -280,7 +276,7 @@ A submission is valid only if:
 - no paper ID is repeated within the same top-10 list
 - the `run_id` is consistent across the file
 
-For filtered queries, filter compliance is scored as part of evaluation rather than treated as a file-format validation rule. However, teams are still expected to honor the filter when producing results.
+The evaluator does not score time-filter compliance as a standalone metric.
 
 ### 4.6 Why JSONL is the required format
 
@@ -349,7 +345,6 @@ A high Exploration Range Score should be assigned when the list gives a student 
 The judge may see:
 
 - query text
-- time-filter condition if present
 - paper title
 - abstract
 - authors
@@ -422,18 +417,11 @@ If the raw Exploration Range Score is on a 1–5 scale, normalize it as:
 
 Even when this summary score is computed, the underlying parts should still be reported separately.
 
-### 6.3 Time-filter metric
+### 6.3 Metric intentionally removed
 
-#### Filter Compliance@10
-
-Filtered queries are evaluated for whether the returned papers satisfy the explicit date constraint.
-
-Filter Compliance@10 is defined as:
-
-- number of returned papers in the top 10 that satisfy the filter
-- divided by 10
-
-This metric is important because time filtering is an explicit user constraint, not just a soft preference.
+The evaluator does **not** compute `Filter Compliance@10` or any other
+standalone time-filter metric. The benchmark still records paper years as
+metadata, but year matching is not treated as a primary quality signal.
 
 ### 6.4 Metrics not claimed in version 1
 
@@ -465,7 +453,6 @@ At minimum:
 And when applicable:
 
 - Exploration Range Score for broad queries
-- Filter Compliance@10 for filtered queries
 
 ### 7.2 Per-bucket reporting
 
@@ -473,11 +460,6 @@ Results should be aggregated separately for:
 
 - broad exploration
 - specific technical
-
-And may also be broken out by:
-
-- filtered
-- unfiltered
 
 This allows the group to see whether one pipeline is better for exploratory use and another is better for precise technical retrieval.
 
@@ -490,7 +472,6 @@ Report the key components separately:
 - Precision@10
 - nDCG@10
 - Exploration Range Score
-- Filter Compliance@10 if the query is filtered
 
 If the Broad Exploration Summary Score is used, treat it as a convenience summary rather than the only decision signal.
 
@@ -513,8 +494,8 @@ The intended workflow is:
 5. The evaluator joins each submitted `paper_id` with the canonical metadata needed for judging.
 6. The LLM performs **paper-level judging** on unique `(query_id, paper_id)` pairs and assigns 0–3 relevance labels.
 7. For broad queries, the LLM performs **list-level judging** on the submitted top 10 and assigns an Exploration Range Score.
-8. The evaluator computes Precision@10, nDCG@10, Exploration Range Score where applicable, and Filter Compliance@10 for filtered queries.
-9. The reporting layer aggregates results by query type and scenario and produces comparison tables.
+8. The evaluator computes Precision@10, nDCG@10, Exploration Range Score where applicable, and the additional absolute/pooled diagnostics used by the current evaluation plan.
+9. The reporting layer aggregates results by query type and produces comparison tables.
 10. The group reviews the report and selects the best pipeline overall or best pipeline by bucket.
 
 Briefly, the LLM is used as the **judge of labels**, not as the direct calculator of metrics. The LLM decides relevance and exploration range; the evaluation scripts then turn those labels into metric values.

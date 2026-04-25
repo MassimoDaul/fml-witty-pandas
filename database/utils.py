@@ -27,6 +27,8 @@ EMBEDDING_COLS: dict[str, tuple[str, int]] = {
     "massimo_abstract": ("vector", 384),
     "massimo_metadata": ("vector", 384),
     "andrew":           ("vector", 128),
+    "autoresearch":     ("vector", 128),
+    "autoresearch_new": ("vector", 128),
     "audrey":           ("vector", 384),
     "autoresearch":     ("vector", 128),
     "autoresearch_new": ("vector", 128),
