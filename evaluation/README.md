@@ -57,7 +57,7 @@ when they match `papers.s2_paper_id`; those are normalized internally to
 Current query file:
 
 ```text
-evaluation layer/benchmark_queries.jsonl
+evaluation/benchmark_queries.jsonl
 ```
 
 The current file uses Semantic Scholar-style fields:
@@ -113,7 +113,7 @@ Example with three submitted runs:
 ```bash
 ./.venv/bin/python -m evaluation.run_full_evaluation \
   --metadata-source postgres \
-  --queries "evaluation layer/benchmark_queries.jsonl" \
+  --queries evaluation/benchmark_queries.jsonl \
   --runs submissions/run_a.jsonl submissions/run_b.jsonl submissions/run_c.jsonl \
   --paper-cache outputs/cache/paper_judgments.jsonl \
   --range-cache outputs/cache/range_judgments.jsonl \
