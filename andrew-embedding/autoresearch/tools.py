@@ -67,8 +67,7 @@ def run_experiment(entrypoint: str = "") -> str:
     # 3. Run eval.py
     try:
         output.append("\n=== Running eval.py ===")
-        # eval.py path requires quotes/escaping in terminal, but subprocess handles the list naturally
-        eval_script = str(PROJECT_ROOT / "evaluation layer" / "v2" / "eval.py")
+        eval_script = str(PROJECT_ROOT / "evaluation" / "eval.py")
         res_eval = subprocess.run(
             ["python", eval_script], 
             cwd=str(PROJECT_ROOT), 
