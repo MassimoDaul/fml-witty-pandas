@@ -46,7 +46,9 @@ def init_db():
                     andrew           vector(128),
                     autoresearch     vector(128),
                     autoresearch_new vector(128),
-                    audrey           vector(384),
+                    audrey           halfvec(64),
+                    audrey_hyp       halfvec(64),
+                    audrey_curvature real DEFAULT 1.0,
                     inserted_at      TIMESTAMPTZ DEFAULT now()
                 );
                 CREATE INDEX IF NOT EXISTS idx_papers_author_ids

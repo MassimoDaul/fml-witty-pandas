@@ -16,7 +16,7 @@ Composite scalar (for autoresearch loop):
   0.05 * (silhouette + 1) / 2   (normalized to [0,1]; omitted if NaN)
 
 Usage:
-    python "evaluation layer/v2/eval.py" [--k 10] [--sample 500] [--nprobe 25]
+    python evaluation/eval.py [--k 10] [--sample 500] [--nprobe 25]
 """
 
 import sys
@@ -24,7 +24,7 @@ import random
 import argparse
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import numpy as np
 from sklearn.metrics import silhouette_score

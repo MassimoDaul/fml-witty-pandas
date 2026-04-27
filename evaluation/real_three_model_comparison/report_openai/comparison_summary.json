@@ -1,0 +1,22 @@
+{
+  "by_run": {
+    "andrew": {
+      "corpus_coverage_rate": 0.0206,
+      "corpus_size": 25000,
+      "unique_papers_returned": 515
+    },
+    "audrey": {
+      "corpus_coverage_rate": 0.0288,
+      "corpus_size": 25000,
+      "unique_papers_returned": 720
+    },
+    "massimo": {
+      "corpus_coverage_rate": 0.03108,
+      "corpus_size": 25000,
+      "unique_papers_returned": 777
+    }
+  },
+  "corpus_size": 25000,
+  "overall_corpus_coverage_rate": 0.06664,
+  "overall_unique_papers_returned": 1666
+}
