@@ -1,0 +1,4 @@
+run_id,unique_papers_returned,corpus_size,corpus_coverage_rate
+andrew,515,25000,0.0206
+audrey,720,25000,0.0288
+massimo,777,25000,0.0311
