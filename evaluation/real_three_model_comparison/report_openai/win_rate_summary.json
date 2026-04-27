@@ -1,0 +1,101 @@
+{
+  "by_run": {
+    "andrew": {
+      "fractional_win_rate": 0.16,
+      "fractional_wins": 16.0,
+      "strict_win_rate": 0.16,
+      "strict_wins": 16
+    },
+    "audrey": {
+      "fractional_win_rate": 0.03,
+      "fractional_wins": 3.0,
+      "strict_win_rate": 0.03,
+      "strict_wins": 3
+    },
+    "massimo": {
+      "fractional_win_rate": 0.81,
+      "fractional_wins": 81.0,
+      "strict_win_rate": 0.81,
+      "strict_wins": 81
+    }
+  },
+  "metrics_used": [
+    {
+      "field": "ndcg_at_10",
+      "higher_is_better": true,
+      "label": "nDCG@10",
+      "source": "old_rank_quality"
+    },
+    {
+      "field": "mean_relevance_norm_at_10",
+      "higher_is_better": true,
+      "label": "Mean graded relevance@10",
+      "source": "absolute_llm_relevance"
+    },
+    {
+      "field": "high_relevance_rate_at_10",
+      "higher_is_better": true,
+      "label": "High relevance rate@10",
+      "source": "absolute_llm_relevance"
+    },
+    {
+      "field": "pooled_relevant_recall_at_10",
+      "higher_is_better": true,
+      "label": "Pooled relevant recall@10",
+      "source": "relative_pooled_coverage"
+    },
+    {
+      "field": "field_subfield_diversity_at_10",
+      "higher_is_better": true,
+      "label": "Field/subfield diversity@10",
+      "source": "andrew_metadata_diagnostic"
+    }
+  ],
+  "no_clear_winner_count": 0,
+  "pairwise": {
+    "andrew": {
+      "audrey": {
+        "losses": 29,
+        "no_preference": 0,
+        "ties": 1,
+        "wins": 70
+      },
+      "massimo": {
+        "losses": 83,
+        "no_preference": 0,
+        "ties": 0,
+        "wins": 17
+      }
+    },
+    "audrey": {
+      "andrew": {
+        "losses": 70,
+        "no_preference": 0,
+        "ties": 1,
+        "wins": 29
+      },
+      "massimo": {
+        "losses": 95,
+        "no_preference": 0,
+        "ties": 0,
+        "wins": 5
+      }
+    },
+    "massimo": {
+      "andrew": {
+        "losses": 17,
+        "no_preference": 0,
+        "ties": 0,
+        "wins": 83
+      },
+      "audrey": {
+        "losses": 5,
+        "no_preference": 0,
+        "ties": 0,
+        "wins": 95
+      }
+    }
+  },
+  "query_count": 100,
+  "tie_count": 0
+}
