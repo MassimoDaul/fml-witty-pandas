@@ -1,6 +1,7 @@
 # papers retrieval
 sentence-transformers>=3.0.0
 torch
+geoopt
 psycopg2-binary
 pgvector
 python-dotenv
