@@ -29,7 +29,8 @@ EMBEDDING_COLS: dict[str, tuple[str, int]] = {
     "andrew":           ("vector", 128),
     "autoresearch":     ("vector", 128),
     "autoresearch_new": ("vector", 128),
-    "audrey":           ("vector", 384),
+    "audrey":           ("vector", 64),   # Euclidean tangent proxy (pgvector ANN)
+    "audrey_hyp":       ("vector", 64),   # true Poincaré coordinates (rerank only)
 }
 
 # IVF tuning defaults for ~25k papers (lists = rows / 1000).
