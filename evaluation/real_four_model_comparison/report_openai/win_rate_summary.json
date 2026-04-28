@@ -1,22 +1,28 @@
 {
   "by_run": {
     "andrew": {
-      "fractional_win_rate": 0.16,
-      "fractional_wins": 16.0,
-      "strict_win_rate": 0.16,
-      "strict_wins": 16
+      "fractional_win_rate": 0.09,
+      "fractional_wins": 9.0,
+      "strict_win_rate": 0.09,
+      "strict_wins": 9
     },
     "audrey": {
-      "fractional_win_rate": 0.03,
-      "fractional_wins": 3.0,
-      "strict_win_rate": 0.03,
-      "strict_wins": 3
+      "fractional_win_rate": 0.01,
+      "fractional_wins": 1.0,
+      "strict_win_rate": 0.01,
+      "strict_wins": 1
     },
     "massimo": {
-      "fractional_win_rate": 0.81,
-      "fractional_wins": 81.0,
-      "strict_win_rate": 0.81,
-      "strict_wins": 81
+      "fractional_win_rate": 0.46,
+      "fractional_wins": 46.0,
+      "strict_win_rate": 0.46,
+      "strict_wins": 46
+    },
+    "nomic": {
+      "fractional_win_rate": 0.44,
+      "fractional_wins": 44.0,
+      "strict_win_rate": 0.44,
+      "strict_wins": 44
     }
   },
   "metrics_used": [
@@ -55,44 +61,82 @@
   "pairwise": {
     "andrew": {
       "audrey": {
-        "losses": 29,
-        "no_preference": 0,
-        "ties": 1,
-        "wins": 70
-      },
-      "massimo": {
-        "losses": 83,
+        "losses": 25,
         "no_preference": 0,
         "ties": 0,
-        "wins": 17
+        "wins": 75
+      },
+      "massimo": {
+        "losses": 86,
+        "no_preference": 0,
+        "ties": 0,
+        "wins": 14
+      },
+      "nomic": {
+        "losses": 85,
+        "no_preference": 0,
+        "ties": 0,
+        "wins": 15
       }
     },
     "audrey": {
       "andrew": {
-        "losses": 70,
-        "no_preference": 0,
-        "ties": 1,
-        "wins": 29
-      },
-      "massimo": {
-        "losses": 95,
+        "losses": 75,
         "no_preference": 0,
         "ties": 0,
-        "wins": 5
+        "wins": 25
+      },
+      "massimo": {
+        "losses": 96,
+        "no_preference": 0,
+        "ties": 0,
+        "wins": 4
+      },
+      "nomic": {
+        "losses": 93,
+        "no_preference": 0,
+        "ties": 0,
+        "wins": 6
       }
     },
     "massimo": {
       "andrew": {
-        "losses": 17,
+        "losses": 14,
         "no_preference": 0,
         "ties": 0,
-        "wins": 83
+        "wins": 86
       },
       "audrey": {
-        "losses": 5,
+        "losses": 4,
         "no_preference": 0,
         "ties": 0,
-        "wins": 95
+        "wins": 96
+      },
+      "nomic": {
+        "losses": 48,
+        "no_preference": 0,
+        "ties": 0,
+        "wins": 52
+      }
+    },
+    "nomic": {
+      "andrew": {
+        "losses": 15,
+        "no_preference": 0,
+        "ties": 0,
+        "wins": 85
+      },
+      "audrey": {
+        "losses": 6,
+        "no_preference": 0,
+        "ties": 0,
+        "wins": 93
+      },
+      "massimo": {
+        "losses": 52,
+        "no_preference": 0,
+        "ties": 0,
+        "wins": 48
       }
     }
   },
