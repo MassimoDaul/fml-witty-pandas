@@ -14,9 +14,14 @@
       "corpus_coverage_rate": 0.03108,
       "corpus_size": 25000,
       "unique_papers_returned": 777
+    },
+    "nomic": {
+      "corpus_coverage_rate": 0.0318,
+      "corpus_size": 25000,
+      "unique_papers_returned": 795
     }
   },
   "corpus_size": 25000,
-  "overall_corpus_coverage_rate": 0.06664,
-  "overall_unique_papers_returned": 1666
+  "overall_corpus_coverage_rate": 0.07304,
+  "overall_unique_papers_returned": 1826
 }
