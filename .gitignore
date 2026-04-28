@@ -13,3 +13,7 @@ pyrightconfig.json
 .claude/
 .codex/
 .vscode
+
+weights/
+*.pt
+**/*.pt
