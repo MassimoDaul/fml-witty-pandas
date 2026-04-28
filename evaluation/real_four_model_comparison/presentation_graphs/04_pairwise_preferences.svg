@@ -1,0 +1,333 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg xmlns:xlink="http://www.w3.org/1999/xlink" width="827.342592pt" height="481.941053pt" viewBox="0 0 827.342592 481.941053" xmlns="http://www.w3.org/2000/svg" version="1.1">
+ <metadata>
+  <rdf:RDF xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+   <cc:Work>
+    <dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage"/>
+    <dc:date>2026-04-27T22:31:04.956947</dc:date>
+    <dc:format>image/svg+xml</dc:format>
+    <dc:creator>
+     <cc:Agent>
+      <dc:title>Matplotlib v3.10.9, https://matplotlib.org/</dc:title>
+     </cc:Agent>
+    </dc:creator>
+   </cc:Work>
+  </rdf:RDF>
+ </metadata>
+ <defs>
+  <style type="text/css">*{stroke-linejoin: round; stroke-linecap: butt}</style>
+ </defs>
+ <g id="figure_1">
+  <g id="patch_1">
+   <path d="M 0 481.941053
+L 827.342593 481.941053
+L 827.342593 0
+L 0 0
+z
+" style="fill: #f2ecdf"/>
+  </g>
+  <g id="patch_2">
+   <path d="M 17.568 428.268563
+L 803.808 428.268563
+Q 814.176 428.268563 814.176 422.436563
+L 814.176 72.516563
+Q 814.176 66.684563 803.808 66.684563
+L 17.568 66.684563
+Q 7.2 66.684563 7.2 72.516563
+L 7.2 422.436563
+Q 7.2 428.268563 17.568 428.268563
+z
+" style="fill: #f7f1e8; stroke: #cfc4b2; stroke-linejoin: miter"/>
+  </g>
+  <g id="axes_1">
+   <g id="patch_3">
+    <path d="M 394.98048 410.286563
+L 725.46048 410.286563
+L 725.46048 79.806563
+L 394.98048 79.806563
+z
+" style="fill: #f7f1e8"/>
+   </g>
+   <g clip-path="url(#p66e1b3c1f5)">
+    <image xlink:href="data:image/png;base64,
+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" id="image0408616262" transform="scale(1 -1) translate(0 -330.48)" x="394.98048" y="-79.806562" width="330.48" height="330.48"/>
+   </g>
+   <g id="matplotlib.axis_1">
+    <g id="xtick_1">
+     <g id="line2d_1">
+      <defs>
+       <path id="m159e6e3eb3" d="M 0 0
+L 0 3.5
+" style="stroke: #111111; stroke-width: 0.8"/>
+      </defs>
+      <g>
+       <use xlink:href="#m159e6e3eb3" x="436.29048" y="410.286563" style="fill: #111111; stroke: #111111; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_1">
+      <text style="font-size: 10px; font-family: 'Georgia', 'Times New Roman', 'DejaVu Serif', serif; text-anchor: middle; fill: #111111" x="436.29048" y="424.845937" transform="rotate(-0 436.29048 424.845937)">Andrew</text>
+     </g>
+    </g>
+    <g id="xtick_2">
+     <g id="line2d_2">
+      <g>
+       <use xlink:href="#m159e6e3eb3" x="518.91048" y="410.286563" style="fill: #111111; stroke: #111111; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_2">
+      <text style="font-size: 10px; font-family: 'Georgia', 'Times New Roman', 'DejaVu Serif', serif; text-anchor: middle; fill: #111111" x="518.91048" y="424.845937" transform="rotate(-0 518.91048 424.845937)">Audrey</text>
+     </g>
+    </g>
+    <g id="xtick_3">
+     <g id="line2d_3">
+      <g>
+       <use xlink:href="#m159e6e3eb3" x="601.53048" y="410.286563" style="fill: #111111; stroke: #111111; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_3">
+      <text style="font-size: 10px; font-family: 'Georgia', 'Times New Roman', 'DejaVu Serif', serif; text-anchor: middle; fill: #111111" x="601.53048" y="424.845937" transform="rotate(-0 601.53048 424.845937)">Massimo</text>
+     </g>
+    </g>
+    <g id="xtick_4">
+     <g id="line2d_4">
+      <g>
+       <use xlink:href="#m159e6e3eb3" x="684.15048" y="410.286563" style="fill: #111111; stroke: #111111; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_4">
+      <text style="font-size: 10px; font-family: 'Georgia', 'Times New Roman', 'DejaVu Serif', serif; text-anchor: middle; fill: #111111" x="684.15048" y="424.845937" transform="rotate(-0 684.15048 424.845937)">Nomic</text>
+     </g>
+    </g>
+    <g id="text_5">
+     <text style="font-size: 11px; font-family: 'Georgia', 'Times New Roman', 'DejaVu Serif', serif; text-anchor: middle; fill: #111111" x="560.22048" y="439.33" transform="rotate(-0 560.22048 439.33)">Compared against</text>
+    </g>
+   </g>
+   <g id="matplotlib.axis_2">
+    <g id="ytick_1">
+     <g id="line2d_5">
+      <defs>
+       <path id="m4f2c18f187" d="M 0 0
+L -3.5 0
+" style="stroke: #111111; stroke-width: 0.8"/>
+      </defs>
+      <g>
+       <use xlink:href="#m4f2c18f187" x="394.98048" y="121.116563" style="fill: #111111; stroke: #111111; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_6">
+      <text style="font-size: 10px; font-family: 'Georgia', 'Times New Roman', 'DejaVu Serif', serif; text-anchor: end; fill: #111111" x="387.98048" y="124.89625" transform="rotate(-0 387.98048 124.89625)">Andrew</text>
+     </g>
+    </g>
+    <g id="ytick_2">
+     <g id="line2d_6">
+      <g>
+       <use xlink:href="#m4f2c18f187" x="394.98048" y="203.736563" style="fill: #111111; stroke: #111111; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_7">
+      <text style="font-size: 10px; font-family: 'Georgia', 'Times New Roman', 'DejaVu Serif', serif; text-anchor: end; fill: #111111" x="387.98048" y="207.51625" transform="rotate(-0 387.98048 207.51625)">Audrey</text>
+     </g>
+    </g>
+    <g id="ytick_3">
+     <g id="line2d_7">
+      <g>
+       <use xlink:href="#m4f2c18f187" x="394.98048" y="286.356562" style="fill: #111111; stroke: #111111; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_8">
+      <text style="font-size: 10px; font-family: 'Georgia', 'Times New Roman', 'DejaVu Serif', serif; text-anchor: end; fill: #111111" x="387.98048" y="290.13625" transform="rotate(-0 387.98048 290.13625)">Massimo</text>
+     </g>
+    </g>
+    <g id="ytick_4">
+     <g id="line2d_8">
+      <g>
+       <use xlink:href="#m4f2c18f187" x="394.98048" y="368.976562" style="fill: #111111; stroke: #111111; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_9">
+      <text style="font-size: 10px; font-family: 'Georgia', 'Times New Roman', 'DejaVu Serif', serif; text-anchor: end; fill: #111111" x="387.98048" y="372.75625" transform="rotate(-0 387.98048 372.75625)">Nomic</text>
+     </g>
+    </g>
+    <g id="text_10">
+     <text style="font-size: 11px; font-family: 'Georgia', 'Times New Roman', 'DejaVu Serif', serif; text-anchor: middle; fill: #111111" x="341.51048" y="245.046563" transform="rotate(-90 341.51048 245.046563)">Preferred model</text>
+    </g>
+   </g>
+   <g id="text_11">
+    <text style="font-size: 18px; font-family: 'Georgia', 'Times New Roman', 'DejaVu Serif', serif; text-anchor: middle; fill: #5f5a50" x="436.29048" y="125.968125" transform="rotate(-0 436.29048 125.968125)">-</text>
+   </g>
+   <g id="text_12">
+    <text style="font-weight: 700; font-size: 11px; font-family: 'Georgia', 'Times New Roman', 'DejaVu Serif', serif; fill: #111111" transform="translate(507.730871 117.899406)">75%</text>
+    <text style="font-weight: 700; font-size: 11px; font-family: 'Georgia', 'Times New Roman', 'DejaVu Serif', serif; fill: #111111" transform="translate(503.743371 130.263406)">75-25</text>
+   </g>
+   <g id="text_13">
+    <text style="font-weight: 700; font-size: 11px; font-family: 'Georgia', 'Times New Roman', 'DejaVu Serif', serif; fill: #111111" transform="translate(590.429074 117.899406)">14%</text>
+    <text style="font-weight: 700; font-size: 11px; font-family: 'Georgia', 'Times New Roman', 'DejaVu Serif', serif; fill: #111111" transform="translate(585.898449 130.263406)">14-86</text>
+   </g>
+   <g id="text_14">
+    <text style="font-weight: 700; font-size: 11px; font-family: 'Georgia', 'Times New Roman', 'DejaVu Serif', serif; fill: #111111" transform="translate(673.325793 117.899406)">15%</text>
+    <text style="font-weight: 700; font-size: 11px; font-family: 'Georgia', 'Times New Roman', 'DejaVu Serif', serif; fill: #111111" transform="translate(669.064152 130.263406)">15-85</text>
+   </g>
+   <g id="text_15">
+    <text style="font-weight: 700; font-size: 11px; font-family: 'Georgia', 'Times New Roman', 'DejaVu Serif', serif; fill: #111111" transform="translate(424.713839 200.519406)">25%</text>
+    <text style="font-weight: 700; font-size: 11px; font-family: 'Georgia', 'Times New Roman', 'DejaVu Serif', serif; fill: #111111" transform="translate(421.123371 212.883406)">25-75</text>
+   </g>
+   <g id="text_16">
+    <text style="font-size: 18px; font-family: 'Georgia', 'Times New Roman', 'DejaVu Serif', serif; text-anchor: middle; fill: #5f5a50" x="518.91048" y="208.588125" transform="rotate(-0 518.91048 208.588125)">-</text>
+   </g>
+   <g id="text_17">
+    <text style="font-weight: 700; font-size: 11px; font-family: 'Georgia', 'Times New Roman', 'DejaVu Serif', serif; fill: #111111" transform="translate(593.122355 200.519406)">4%</text>
+    <text style="font-weight: 700; font-size: 11px; font-family: 'Georgia', 'Times New Roman', 'DejaVu Serif', serif; fill: #111111" transform="translate(588.747277 212.883406)">4-96</text>
+   </g>
+   <g id="text_18">
+    <text style="font-weight: 700; font-size: 11px; font-family: 'Georgia', 'Times New Roman', 'DejaVu Serif', serif; fill: #111111" transform="translate(675.750089 200.519406)">6%</text>
+    <text style="font-weight: 700; font-size: 11px; font-family: 'Georgia', 'Times New Roman', 'DejaVu Serif', serif; fill: #111111" transform="translate(671.503918 212.883406)">6-93</text>
+   </g>
+   <g id="text_19">
+    <text style="font-weight: 700; font-size: 11px; font-family: 'Georgia', 'Times New Roman', 'DejaVu Serif', serif; fill: #111111" transform="translate(424.170714 283.139406)">86%</text>
+    <text style="font-weight: 700; font-size: 11px; font-family: 'Georgia', 'Times New Roman', 'DejaVu Serif', serif; fill: #111111" transform="translate(420.658449 295.503406)">86-14</text>
+   </g>
+   <g id="text_20">
+    <text style="font-weight: 700; font-size: 11px; font-family: 'Georgia', 'Times New Roman', 'DejaVu Serif', serif; fill: #111111" transform="translate(506.946261 283.139406)">96%</text>
+    <text style="font-weight: 700; font-size: 11px; font-family: 'Georgia', 'Times New Roman', 'DejaVu Serif', serif; fill: #111111" transform="translate(506.127277 295.503406)">96-4</text>
+   </g>
+   <g id="text_21">
+    <text style="font-size: 18px; font-family: 'Georgia', 'Times New Roman', 'DejaVu Serif', serif; text-anchor: middle; fill: #5f5a50" x="601.53048" y="291.208125" transform="rotate(-0 601.53048 291.208125)">-</text>
+   </g>
+   <g id="text_22">
+    <text style="font-weight: 700; font-size: 11px; font-family: 'Georgia', 'Times New Roman', 'DejaVu Serif', serif; fill: #111111" transform="translate(672.573839 283.139406)">52%</text>
+    <text style="font-weight: 700; font-size: 11px; font-family: 'Georgia', 'Times New Roman', 'DejaVu Serif', serif; fill: #111111" transform="translate(668.03548 295.503406)">52-48</text>
+   </g>
+   <g id="text_23">
+    <text style="font-weight: 700; font-size: 11px; font-family: 'Georgia', 'Times New Roman', 'DejaVu Serif', serif; fill: #111111" transform="translate(424.439699 365.759406)">85%</text>
+    <text style="font-weight: 700; font-size: 11px; font-family: 'Georgia', 'Times New Roman', 'DejaVu Serif', serif; fill: #111111" transform="translate(421.204152 378.123406)">85-15</text>
+   </g>
+   <g id="text_24">
+    <text style="font-weight: 700; font-size: 11px; font-family: 'Georgia', 'Times New Roman', 'DejaVu Serif', serif; fill: #111111" transform="translate(506.938527 365.759406)">94%</text>
+    <text style="font-weight: 700; font-size: 11px; font-family: 'Georgia', 'Times New Roman', 'DejaVu Serif', serif; fill: #111111" transform="translate(506.263917 378.123406)">93-6</text>
+   </g>
+   <g id="text_25">
+    <text style="font-weight: 700; font-size: 11px; font-family: 'Georgia', 'Times New Roman', 'DejaVu Serif', serif; fill: #111111" transform="translate(589.40298 365.759406)">48%</text>
+    <text style="font-weight: 700; font-size: 11px; font-family: 'Georgia', 'Times New Roman', 'DejaVu Serif', serif; fill: #111111" transform="translate(585.41548 378.123406)">48-52</text>
+   </g>
+   <g id="text_26">
+    <text style="font-size: 18px; font-family: 'Georgia', 'Times New Roman', 'DejaVu Serif', serif; text-anchor: middle; fill: #5f5a50" x="684.15048" y="373.828125" transform="rotate(-0 684.15048 373.828125)">-</text>
+   </g>
+   <g id="text_27">
+    <text style="font-size: 8.5px; font-family: 'Georgia', 'Times New Roman', 'DejaVu Serif', serif; text-anchor: end; fill: #5f5a50" x="718.85088" y="472.897616" transform="rotate(-0 718.85088 472.897616)">Source: report_openai/pairwise_preferences.csv</text>
+   </g>
+  </g>
+  <g id="axes_2">
+   <g id="patch_4">
+    <path d="M 755.87328 410.286563
+L 772.39728 410.286563
+L 772.39728 79.806563
+L 755.87328 79.806563
+z
+" style="fill: #ffffff"/>
+   </g>
+   <image xlink:href="data:image/png;base64,
+iVBORw0KGgoAAAANSUhEUgAAABcAAAHLCAYAAAAjoQNAAAACj0lEQVR4nO2dQY4cMQwDuYL+/82cc8uNecB4j8SgBPIBBcEWJdnd0/Pz7+8fK6RJgePwlQ2N3Nw1Vy72DbLFzfNJwrcmeqkmOpbng62Kk+1EzsEnh1ar4r01V030qW7oV4YixTQ5tNAmUk6DzZblbqhqolP1fLCD6GJNNFj4Yi8WJglf7IFra6KXaqKnOis+1ap4rJ4PNluWfOByDD4xsgo/ly0LNpGgJlrsxcJg4VsTvVQTHcvz4b48Y2pVXGwnGix8+8zilokGC1+s/bcmunYmcg4+ObRqonO1xUH4BNmqic41aENNNFj4ku3vGHxiZHVZ7q25g/AJslUTXRvnhD1ZOAifIFs10bV6LuposWATqT/4vWUiYU3kHHxyaNVEb9VET9VExwrXJOHLPVmIuqHbTvRSTfRUTXTuTOQkXNCqOFj49mLhpY4Wx/J8kvCtiV7qhh5blknC19wrbicvitVl+VTr+TkTKQgXd1mMjVzUyMVdc0cfWToGnxhZ6PsWY9dc2Mid/a2iY/CJkcXeUEMjnyR8scuy3MiFHYqMXXN3KHqoQ9FT7aFfGIrU2vJQX+R4qj30WoNWh6KH2om+8LlsY1NRWPubG7k6FJ3aUGHfKDa2cLnH84e6oU+1hz7V/xC51omMjVztRMc21Dn45NAi91Bhs8XZb847Bp8YWd3QX9Qr7q98Ltsx+MTIYptI2MjdO65Tv4M2NhXFtb87FH2qG/pUT3NP9b3ccyYSNnJTI1e0EznGVi8tr6WisZGrx/Nj9jc1FY3tocp2IsfgEyOrG3ruoni5qShsbTF3zU2N3B2Kjj09d1Pxkv2Xu6FqJzo1FA35H9sdg0+MLLb9TY3c2GxRL4qPmUjUyE1d8/91TZmadz39iQAAAABJRU5ErkJggg==" id="imageba613ce1b1" transform="scale(1 -1) translate(0 -330.48)" x="756" y="-79.2" width="16.56" height="330.48"/>
+   <g id="matplotlib.axis_3"/>
+   <g id="matplotlib.axis_4">
+    <g id="ytick_5">
+     <g id="line2d_9">
+      <defs>
+       <path id="m8cad8261a0" d="M 0 0
+L 3.5 0
+" style="stroke: #111111; stroke-width: 0.8"/>
+      </defs>
+      <g>
+       <use xlink:href="#m8cad8261a0" x="772.39728" y="410.286563" style="fill: #111111; stroke: #111111; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_28">
+      <text style="font-size: 10px; font-family: 'Georgia', 'Times New Roman', 'DejaVu Serif', serif; text-anchor: start; fill: #111111" x="779.39728" y="414.06625" transform="rotate(-0 779.39728 414.06625)">0%</text>
+     </g>
+    </g>
+    <g id="ytick_6">
+     <g id="line2d_10">
+      <g>
+       <use xlink:href="#m8cad8261a0" x="772.39728" y="344.190562" style="fill: #111111; stroke: #111111; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_29">
+      <text style="font-size: 10px; font-family: 'Georgia', 'Times New Roman', 'DejaVu Serif', serif; text-anchor: start; fill: #111111" x="779.39728" y="347.97025" transform="rotate(-0 779.39728 347.97025)">20%</text>
+     </g>
+    </g>
+    <g id="ytick_7">
+     <g id="line2d_11">
+      <g>
+       <use xlink:href="#m8cad8261a0" x="772.39728" y="278.094563" style="fill: #111111; stroke: #111111; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_30">
+      <text style="font-size: 10px; font-family: 'Georgia', 'Times New Roman', 'DejaVu Serif', serif; text-anchor: start; fill: #111111" x="779.39728" y="281.87425" transform="rotate(-0 779.39728 281.87425)">40%</text>
+     </g>
+    </g>
+    <g id="ytick_8">
+     <g id="line2d_12">
+      <g>
+       <use xlink:href="#m8cad8261a0" x="772.39728" y="211.998562" style="fill: #111111; stroke: #111111; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_31">
+      <text style="font-size: 10px; font-family: 'Georgia', 'Times New Roman', 'DejaVu Serif', serif; text-anchor: start; fill: #111111" x="779.39728" y="215.77825" transform="rotate(-0 779.39728 215.77825)">60%</text>
+     </g>
+    </g>
+    <g id="ytick_9">
+     <g id="line2d_13">
+      <g>
+       <use xlink:href="#m8cad8261a0" x="772.39728" y="145.902563" style="fill: #111111; stroke: #111111; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_32">
+      <text style="font-size: 10px; font-family: 'Georgia', 'Times New Roman', 'DejaVu Serif', serif; text-anchor: start; fill: #111111" x="779.39728" y="149.68225" transform="rotate(-0 779.39728 149.68225)">80%</text>
+     </g>
+    </g>
+    <g id="ytick_10">
+     <g id="line2d_14">
+      <g>
+       <use xlink:href="#m8cad8261a0" x="772.39728" y="79.806563" style="fill: #111111; stroke: #111111; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_33">
+      <text style="font-size: 10px; font-family: 'Georgia', 'Times New Roman', 'DejaVu Serif', serif; text-anchor: start; fill: #111111" x="779.39728" y="83.58625" transform="rotate(-0 779.39728 83.58625)">100%</text>
+     </g>
+    </g>
+    <g id="text_34">
+     <text style="font-size: 11px; font-family: 'Georgia', 'Times New Roman', 'DejaVu Serif', serif; text-anchor: middle; fill: #111111" x="811.82728" y="245.046563" transform="rotate(-270 811.82728 245.046563)">Preference rate</text>
+    </g>
+   </g>
+   <g id="LineCollection_1"/>
+   <g id="patch_5">
+    <path d="M 755.87328 410.286563
+L 764.13528 410.286563
+L 772.39728 410.286563
+L 772.39728 79.806563
+L 764.13528 79.806563
+L 755.87328 79.806563
+L 755.87328 410.286563
+z
+" style="fill: none; stroke: #4a463f; stroke-width: 0.8; stroke-linejoin: miter; stroke-linecap: square"/>
+   </g>
+  </g>
+  <g id="line2d_15">
+   <path d="M 30.528 38.496562
+L 790.848 38.496562
+" style="fill: none; stroke: #111111; stroke-width: 1.5; stroke-linecap: square"/>
+  </g>
+  <g id="text_35">
+   <text style="font-weight: 700; font-size: 22px; font-family: 'DejaVu Sans', 'Bitstream Vera Sans', 'Computer Modern Sans Serif', 'Lucida Grande', 'Verdana', 'Geneva', 'Lucid', 'Arial', 'Helvetica', 'Avant Garde', sans-serif; text-anchor: start; fill: #111111" x="30.528" y="23.916562" transform="rotate(-0 30.528 23.916562)">PAIRWISE PREFERENCES</text>
+  </g>
+  <g id="text_36">
+   <text style="font-size: 11px; font-family: 'Georgia', 'Times New Roman', 'DejaVu Serif', serif; text-anchor: start; fill: #5f5a50" x="30.528" y="53.076563" transform="rotate(-0 30.528 53.076563)">Rows show how often a model was preferred over the column model by the LLM comparison layer.</text>
+  </g>
+ </g>
+ <defs>
+  <clipPath id="p66e1b3c1f5">
+   <rect x="394.98048" y="79.806563" width="330.48" height="330.48"/>
+  </clipPath>
+ </defs>
+</svg>

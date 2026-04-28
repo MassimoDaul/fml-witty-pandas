@@ -1,0 +1,13 @@
+run_id,opponent_run_id,wins,losses,ties,no_preference
+andrew,audrey,75,25,0,0
+andrew,massimo,14,86,0,0
+andrew,nomic,15,85,0,0
+audrey,andrew,25,75,0,0
+audrey,massimo,4,96,0,0
+audrey,nomic,6,93,0,0
+massimo,andrew,86,14,0,0
+massimo,audrey,96,4,0,0
+massimo,nomic,52,48,0,0
+nomic,andrew,85,15,0,0
+nomic,audrey,93,6,0,0
+nomic,massimo,48,52,0,0
