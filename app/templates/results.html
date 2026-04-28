@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "macros.html" import search_mode_toggle, site_header %}
+{% from "macros.html" import embedding_select, search_mode_toggle, site_header %}
 
 {% block title %}Student Research Helper | Results{% endblock %}
 {% block body_class %}page-results{% endblock %}
@@ -97,6 +97,8 @@
         </div>
 
         <div class="filter-sidebar__body" data-paper-filters {% if mode == "authors" %}hidden{% endif %}>
+          {{ embedding_select(embedding) }}
+
           <div class="field-group">
             <label for="results-categories">Subject / arXiv field</label>
             <input

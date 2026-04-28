@@ -41,6 +41,18 @@
 </fieldset>
 {%- endmacro %}
 
+{% macro embedding_select(selected="nomic") -%}
+<div class="field-group">
+  <label for="results-embedding">Embedding model</label>
+  <select id="results-embedding" name="embedding">
+    <option value="nomic"   {% if selected == "nomic"   %}selected{% endif %}>Nomic (semantic)</option>
+    <option value="andrew"  {% if selected == "andrew"  %}selected{% endif %}>Andrew (GNN)</option>
+    <option value="massimo" {% if selected == "massimo" %}selected{% endif %}>Massimo (weighted)</option>
+    <option value="audrey"  {% if selected == "audrey"  %}selected{% endif %}>Audrey (hyperbolic)</option>
+  </select>
+</div>
+{%- endmacro %}
+
 {% macro example_queries() -%}
 <div class="example-query-list" aria-label="Example searches">
   <a class="query-chip" href="/results?q={{ 'llms for low-resource languages' | url_encode }}&mode=papers">LLMs for low-resource languages</a>

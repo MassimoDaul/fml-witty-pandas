@@ -23,7 +23,7 @@ from psycopg2.pool import ThreadedConnectionPool
 
 from author_query import papers_by_author, search_by_name
 from ingest.config import POSTGRES_CONN_STRING
-from query import embed_query, related_search, search
+from query import VALID_EMBEDDINGS, embed_query, related_search, search
 
 templates = Jinja2Templates(directory=str(Path(__file__).parent / "templates"))
 templates.env.filters["url_encode"] = lambda s: quote(str(s), safe="")
@@ -32,6 +32,7 @@ DEFAULT_RESULTS_K = 12
 MAX_RESULTS_K = 50
 DEFAULT_MODE = "papers"
 DEFAULT_SORT = "relevance"
+DEFAULT_EMBEDDING = "nomic"
 PAPER_SORTS = {"relevance", "newest", "oldest"}
 
 
@@ -66,6 +67,10 @@ def normalize_mode(value: str) -> str:
 
 def normalize_sort(value: str) -> str:
     return value if value in PAPER_SORTS else DEFAULT_SORT
+
+
+def normalize_embedding(value: str) -> str:
+    return value if value in VALID_EMBEDDINGS else DEFAULT_EMBEDDING
 
 
 def clamp_k(value: str | int | None) -> int:
@@ -123,12 +128,14 @@ def build_results_url(
     categories: str = "",
     year_from: str = "",
     year_to: str = "",
+    embedding: str = DEFAULT_EMBEDDING,
 ) -> str:
     params = {
         "q": q,
         "mode": normalize_mode(mode),
         "sort": normalize_sort(sort),
         "k": clamp_k(k),
+        "embedding": normalize_embedding(embedding),
     }
     if categories.strip():
         params["categories"] = categories.strip()
@@ -150,11 +157,13 @@ def build_results_context(
     categories: str = "",
     year_from: str = "",
     year_to: str = "",
+    embedding: str = DEFAULT_EMBEDDING,
 ) -> dict:
     query_text = q.strip()
     mode = normalize_mode(mode)
     sort = normalize_sort(sort)
     k_value = clamp_k(k)
+    embedding_value = normalize_embedding(embedding)
     categories_text = categories.strip()
     year_from_text, year_from_value = clean_year(year_from)
     year_to_text, year_to_value = clean_year(year_to)
@@ -180,6 +189,7 @@ def build_results_context(
                         categories=category_filters,
                         year_from=year_from_value,
                         year_to=year_to_value,
+                        embedding=embedding_value,
                     )
                     results = sort_paper_results(results, sort)
         except Exception as exc:
@@ -192,6 +202,7 @@ def build_results_context(
         "mode": mode,
         "sort": sort,
         "k": k_value,
+        "embedding": embedding_value,
         "categories": categories_text,
         "year_from": year_from_text,
         "year_to": year_to_text,
@@ -205,12 +216,14 @@ def build_results_context(
             mode=mode,
             sort=sort,
             k=k_value,
+            embedding=embedding_value,
         ),
         "switch_mode_url": build_results_url(
             q=query_text,
             mode="authors" if mode == "papers" else "papers",
             sort=DEFAULT_SORT,
             k=k_value,
+            embedding=embedding_value,
         ),
         "page_body_class": "page-results" if request.url.path == "/results" else "page-search",
     }
@@ -238,6 +251,7 @@ def results_page(
     categories: str = Query(default=""),
     year_from: str = Query(default=""),
     year_to: str = Query(default=""),
+    embedding: str = Query(default=DEFAULT_EMBEDDING),
 ):
     context = build_results_context(
         request,
@@ -248,6 +262,7 @@ def results_page(
         categories=categories,
         year_from=year_from,
         year_to=year_to,
+        embedding=embedding,
     )
     return templates.TemplateResponse(request, "results.html", context)
 
