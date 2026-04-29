@@ -76,6 +76,41 @@
   </div>
 </section>
 {% else %}
+{% if mode == "papers" and embedding == "massimo" %}
+<section
+  class="embedding-panel"
+  data-embedding-space
+  data-query="{{ query | e }}"
+  data-categories="{{ categories | e }}"
+  data-year-from="{{ year_from | e }}"
+  data-year-to="{{ year_to | e }}"
+  data-limit="30"
+>
+  <div class="embedding-panel__header">
+    <div>
+      <p class="eyebrow eyebrow--small">Massimo retrieval</p>
+      <h2>Embedding spaces</h2>
+    </div>
+    <div class="embedding-tabs" role="tablist" aria-label="Massimo embedding component">
+      <button type="button" class="embedding-tab is-active" data-space-tab="title" role="tab" aria-selected="true">Title</button>
+      <button type="button" class="embedding-tab" data-space-tab="abstract" role="tab" aria-selected="false">Abstract</button>
+      <button type="button" class="embedding-tab" data-space-tab="metadata" role="tab" aria-selected="false">Metadata</button>
+    </div>
+  </div>
+
+  <div class="embedding-chart-wrap">
+    <p class="embedding-status" data-embedding-status aria-live="polite">Loading embedding space...</p>
+    <div class="embedding-tooltip" data-embedding-tooltip></div>
+    <svg class="embedding-chart" data-embedding-chart role="img" aria-label="Massimo embedding space projection"></svg>
+  </div>
+
+  <div class="embedding-legend" aria-label="Embedding space legend">
+    <span><i class="embedding-legend__dot embedding-legend__dot--query"></i> Query</span>
+    <span><i class="embedding-legend__dot embedding-legend__dot--paper"></i> Paper</span>
+  </div>
+</section>
+{% endif %}
+
 <div class="results-list" aria-live="polite">
   {% if mode == "authors" %}
     {% for author in results %}
