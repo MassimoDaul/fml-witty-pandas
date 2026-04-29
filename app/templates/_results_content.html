@@ -1,5 +1,4 @@
 {% from "macros.html" import author_card, paper_card %}
-
 {% if not has_query %}
 <section class="state-panel">
   <p class="eyebrow">Results workspace</p>
@@ -19,9 +18,10 @@
   </div>
 </section>
 {% else %}
+{% if mode == "authors" %}
 <section class="results-overview">
   <div class="results-overview__copy">
-    <p class="eyebrow">{% if mode == "authors" %}Author search{% else %}Paper search{% endif %}</p>
+    <p class="eyebrow">Author search</p>
     <h1>
       {% if result_count %}
       {{ result_count }} result{{ "s" if result_count != 1 else "" }} for “{{ query }}”
@@ -29,44 +29,21 @@
       No results for “{{ query }}”
       {% endif %}
     </h1>
-    <p>
-      {% if mode == "authors" %}
-      Browse matching researchers and open an author to see the papers currently stored in the local library.
-      {% else %}
-      Results are ranked semantically from the title and abstract. Use filters only when the first pass is too broad.
-      {% endif %}
-    </p>
+    <p>Browse matching researchers and open an author to see the papers currently stored in the local library.</p>
   </div>
 
   <div class="results-overview__stats" aria-label="Search summary">
     <div class="stat-card">
       <span class="stat-card__label">Mode</span>
-      <strong>{% if mode == "authors" %}Authors{% else %}Papers{% endif %}</strong>
+      <strong>Authors</strong>
     </div>
     <div class="stat-card">
       <span class="stat-card__label">Showing</span>
       <strong>{{ result_count }}</strong>
     </div>
-    {% if mode == "papers" %}
-    <div class="stat-card">
-      <span class="stat-card__label">Sort</span>
-      <strong>
-        {% if sort == "newest" %}
-        Newest
-        {% elif sort == "oldest" %}
-        Oldest
-        {% else %}
-        Relevance
-        {% endif %}
-      </strong>
-    </div>
-    <div class="stat-card">
-      <span class="stat-card__label">Embedding</span>
-      <strong>{{ embedding | capitalize }}</strong>
-    </div>
-    {% endif %}
   </div>
 </section>
+{% endif %}
 
 {% if categories or year_from or year_to %}
 <section class="active-filters" aria-label="Active filters">
@@ -110,5 +87,56 @@
     {% endfor %}
   {% endif %}
 </div>
+
+{% if show_pagination %}
+<nav class="pagination" aria-label="Paper result pages">
+  {% if has_previous_page %}
+  <a
+    class="pagination__link pagination__edge"
+    href="{{ previous_page_url }}"
+    hx-get="{{ previous_page_url }}"
+    hx-select="#results-content"
+    hx-target="#results-content"
+    hx-push-url="true"
+    hx-indicator="#results-loading"
+  >Previous</a>
+  {% else %}
+  <span class="pagination__disabled pagination__edge" aria-disabled="true">Previous</span>
+  {% endif %}
+
+  <div class="pagination__pages">
+    {% for page_link in page_links %}
+      {% if page_link.is_current %}
+      <span class="pagination__current" aria-current="page">{{ page_link.page }}</span>
+      {% else %}
+      <a
+        class="pagination__link"
+        href="{{ page_link.url }}"
+        hx-get="{{ page_link.url }}"
+        hx-select="#results-content"
+        hx-target="#results-content"
+        hx-push-url="true"
+        hx-indicator="#results-loading"
+        aria-label="Go to page {{ page_link.page }}"
+      >{{ page_link.page }}</a>
+      {% endif %}
+    {% endfor %}
+  </div>
+
+  {% if has_next_page %}
+  <a
+    class="pagination__link pagination__edge"
+    href="{{ next_page_url }}"
+    hx-get="{{ next_page_url }}"
+    hx-select="#results-content"
+    hx-target="#results-content"
+    hx-push-url="true"
+    hx-indicator="#results-loading"
+  >Next</a>
+  {% else %}
+  <span class="pagination__disabled pagination__edge" aria-disabled="true">Next</span>
+  {% endif %}
+</nav>
+{% endif %}
 {% endif %}
 {% endif %}

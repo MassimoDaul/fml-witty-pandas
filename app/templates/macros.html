@@ -9,11 +9,7 @@
   <div class="site-shell site-shell--wide">
     <div class="site-header__inner">
       <a class="brand" href="/">
-        <span class="brand__mark" aria-hidden="true">SR</span>
-        <span class="brand__text">
-          <strong>Student Research Helper</strong>
-          <span>Paper search for questions, topics, and projects</span>
-        </span>
+        <img class="brand__logo" src="/static/images/cephalo-logo.png?v=transparent-20260428" alt="Cephalo">
       </a>
 
       <nav class="site-nav" aria-label="Primary">
@@ -41,7 +37,7 @@
 </fieldset>
 {%- endmacro %}
 
-{% macro embedding_select(selected="nomic") -%}
+{% macro embedding_select(selected="massimo") -%}
 <div class="field-group">
   <label for="results-embedding">Embedding model</label>
   <select id="results-embedding" name="embedding">

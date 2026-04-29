@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% from "macros.html" import embedding_select, search_mode_toggle, site_header %}
 
-{% block title %}Student Research Helper | Results{% endblock %}
+{% block title %}Cephalo | Results{% endblock %}
 {% block body_class %}page-results{% endblock %}
 
 {% block head %}
@@ -121,15 +121,6 @@
               <label for="results-year-to">Year to</label>
               <input id="results-year-to" name="year_to" type="number" min="1900" max="2099" inputmode="numeric" value="{{ year_to }}" placeholder="2026">
             </div>
-          </div>
-
-          <div class="field-group">
-            <label for="results-k">Results shown</label>
-            <select id="results-k" name="k">
-              {% for option in [8, 12, 16, 24, 32] %}
-              <option value="{{ option }}" {% if k == option %}selected{% endif %}>{{ option }}</option>
-              {% endfor %}
-            </select>
           </div>
 
           <p class="sidebar-note">The current library supports subject and year filters. Keep the first pass broad, then narrow only if needed.</p>
