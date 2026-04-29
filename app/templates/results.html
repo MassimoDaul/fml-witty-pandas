@@ -6,6 +6,7 @@
 
 {% block head %}
   <script src="https://unpkg.com/htmx.org@2.0.4" integrity="sha384-HGfztofotfshcF7+8n44JQL2oJmowVChPTg48S+jvZoztPfvwD79OC/LTtG6dMp+" crossorigin="anonymous"></script>
+  <script src="https://d3js.org/d3.v7.min.js"></script>
 {% endblock %}
 
 {% block body %}
@@ -157,4 +158,8 @@
     </div>
   </form>
 </main>
+{% endblock %}
+
+{% block scripts %}
+  <script src="/static/embedding-space.js?v=massimo-space-20260429" defer></script>
 {% endblock %}

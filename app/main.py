@@ -12,6 +12,7 @@ from urllib.parse import quote, urlencode
 sys.path.insert(0, str(Path(__file__).parent.parent / "papers"))
 
 import httpx
+import numpy as np
 import psycopg2
 import psycopg2.extras
 from cachetools import TTLCache
@@ -35,7 +36,14 @@ PAPER_PAGE_SIZE = 10
 DEFAULT_MODE = "papers"
 DEFAULT_SORT = "relevance"
 DEFAULT_EMBEDDING = "massimo"
+DEFAULT_EMBEDDING_SPACE_LIMIT = 30
+MAX_EMBEDDING_SPACE_LIMIT = 50
 PAPER_SORTS = {"relevance", "newest", "oldest"}
+MASSIMO_SPACES = (
+    {"key": "title", "label": "Title", "column": "massimo_title"},
+    {"key": "abstract", "label": "Abstract", "column": "massimo_abstract"},
+    {"key": "metadata", "label": "Metadata", "column": "massimo_metadata"},
+)
 
 
 @contextmanager
@@ -48,12 +56,21 @@ def db_conn(app):
         app.state.pool.putconn(conn)
 
 
+def ensure_embedding_space_cache(app):
+    if not hasattr(app.state, "embedding_space_cache"):
+        app.state.embedding_space_cache = TTLCache(maxsize=128, ttl=900)
+    if not hasattr(app.state, "embedding_space_cache_lock"):
+        app.state.embedding_space_cache_lock = threading.Lock()
+    return app.state.embedding_space_cache, app.state.embedding_space_cache_lock
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     pool = ThreadedConnectionPool(1, 10, POSTGRES_CONN_STRING)
     app.state.pool = pool
     app.state.s2_cache = TTLCache(maxsize=64, ttl=3600)
     app.state.s2_cache_lock = threading.Lock()
+    ensure_embedding_space_cache(app)
     embed_query("warmup")
     yield
     pool.closeall()
@@ -81,6 +98,14 @@ def clamp_k(value: str | int | None) -> int:
     except (TypeError, ValueError):
         parsed = DEFAULT_RESULTS_K
     return max(1, min(parsed, MAX_RESULTS_K))
+
+
+def clamp_embedding_space_limit(value: str | int | None) -> int:
+    try:
+        parsed = int(value) if value is not None else DEFAULT_EMBEDDING_SPACE_LIMIT
+    except (TypeError, ValueError):
+        parsed = DEFAULT_EMBEDDING_SPACE_LIMIT
+    return max(3, min(parsed, MAX_EMBEDDING_SPACE_LIMIT))
 
 
 def normalize_page(value: str | int | None) -> int:
@@ -143,6 +168,138 @@ def paper_columns(conn) -> set[str]:
 
 def is_legacy_arxiv_schema(columns: set[str]) -> bool:
     return "arxiv_id" in columns and "embedding" in columns and "corpus_id" not in columns
+
+
+def vector_to_np(value) -> np.ndarray | None:
+    if value is None:
+        return None
+    return np.asarray(value.to_numpy() if hasattr(value, "to_numpy") else value, dtype=np.float32)
+
+
+def pca_project(vectors: list[np.ndarray | None]) -> tuple[list[dict | None], list[float]]:
+    valid_indices = [idx for idx, vector in enumerate(vectors) if vector is not None]
+    if not valid_indices:
+        return [None for _ in vectors], [0.0, 0.0]
+
+    matrix = np.vstack([vectors[idx] for idx in valid_indices]).astype(np.float32)
+    norms = np.linalg.norm(matrix, axis=1, keepdims=True)
+    matrix = matrix / np.clip(norms, 1e-12, None)
+    centered = matrix - matrix.mean(axis=0, keepdims=True)
+
+    if len(valid_indices) == 1 or np.allclose(centered, 0):
+        coords = np.zeros((len(valid_indices), 2), dtype=np.float32)
+        variance = [0.0, 0.0]
+    elif len(valid_indices) == 2:
+        coords = np.array([[-1.0, 0.0], [1.0, 0.0]], dtype=np.float32)
+        variance = [1.0, 0.0]
+    else:
+        _, singular_values, components = np.linalg.svd(centered, full_matrices=False)
+        coords = centered @ components[:2].T
+        if coords.shape[1] == 1:
+            coords = np.column_stack([coords[:, 0], np.zeros(len(coords), dtype=np.float32)])
+
+        total_variance = float(np.sum(singular_values ** 2))
+        if total_variance > 0:
+            variance_values = (singular_values[:2] ** 2) / total_variance
+            variance = [float(value) for value in variance_values]
+            if len(variance) == 1:
+                variance.append(0.0)
+        else:
+            variance = [0.0, 0.0]
+
+    projected: list[dict | None] = [None for _ in vectors]
+    for coord_index, original_index in enumerate(valid_indices):
+        projected[original_index] = {
+            "x": float(coords[coord_index, 0]),
+            "y": float(coords[coord_index, 1]),
+        }
+    return projected, variance
+
+
+def fetch_massimo_vectors(conn, corpus_ids: list[str]) -> dict[str, dict[str, np.ndarray | None]]:
+    if not corpus_ids:
+        return {}
+    with conn.cursor() as cur:
+        cur.execute(
+            """
+            SELECT corpus_id, massimo_title, massimo_abstract, massimo_metadata
+            FROM papers
+            WHERE corpus_id = ANY(%s)
+            """,
+            (corpus_ids,),
+        )
+        return {
+            row[0]: {
+                "title": vector_to_np(row[1]),
+                "abstract": vector_to_np(row[2]),
+                "metadata": vector_to_np(row[3]),
+            }
+            for row in cur.fetchall()
+        }
+
+
+def build_massimo_embedding_space(query_text: str, results: list[dict], vectors_by_id: dict) -> dict:
+    query_vector = np.array(embed_query(query_text), dtype=np.float32)
+    points = [
+        {
+            "corpus_id": "__query__",
+            "title": f"Query: {query_text}",
+            "year": None,
+            "rank": 0,
+            "similarity": 1.0,
+            "href": "",
+            "is_query": True,
+            "spaces": {},
+        }
+    ]
+
+    for rank, result in enumerate(results, 1):
+        corpus_id = result["arxiv_id"]
+        published = result.get("published")
+        points.append(
+            {
+                "corpus_id": corpus_id,
+                "title": result.get("title") or "Untitled paper",
+                "year": published.year if hasattr(published, "year") else None,
+                "rank": rank,
+                "similarity": float(result.get("similarity") or 0.0),
+                "href": f"/paper/{quote(str(corpus_id), safe='')}",
+                "is_query": False,
+                "spaces": {},
+            }
+        )
+
+    spaces = []
+    for space in MASSIMO_SPACES:
+        key = space["key"]
+        vectors = [query_vector] + [
+            (vectors_by_id.get(result["arxiv_id"]) or {}).get(key)
+            for result in results
+        ]
+        coords, variance = pca_project(vectors)
+        available = 0
+        for point, coord in zip(points, coords):
+            if coord is None:
+                continue
+            point["spaces"][key] = coord
+            available += 1
+        spaces.append(
+            {
+                "key": key,
+                "label": space["label"],
+                "column": space["column"],
+                "explained_variance": variance,
+                "points_available": available,
+            }
+        )
+
+    return {
+        "query": query_text,
+        "embedding": "massimo",
+        "limit": len(results),
+        "spaces": spaces,
+        "points": points,
+    }
 
 
 def build_results_url(
@@ -360,6 +517,74 @@ def results_page(
         page=page,
     )
     return templates.TemplateResponse(request, "results.html", context)
+
+
+@app.get("/api/embedding-space")
+def embedding_space(
+    request: Request,
+    q: str = Query(default=""),
+    categories: str = Query(default=""),
+    year_from: str = Query(default=""),
+    year_to: str = Query(default=""),
+    limit: str = Query(default=str(DEFAULT_EMBEDDING_SPACE_LIMIT)),
+):
+    query_text = q.strip()
+    if not query_text:
+        return JSONResponse(
+            {"error": "A query is required to build an embedding-space visualization."},
+            status_code=400,
+        )
+
+    limit_value = clamp_embedding_space_limit(limit)
+    categories_text = categories.strip()
+    category_filters = [c for c in re.split(r"[,\s]+", categories_text) if c] or None
+    year_from_text, year_from_value = clean_year(year_from)
+    year_to_text, year_to_value = clean_year(year_to)
+    if year_from_value is not None and year_to_value is not None and year_from_value > year_to_value:
+        year_from_value, year_to_value = year_to_value, year_from_value
+        year_from_text, year_to_text = str(year_from_value), str(year_to_value)
+
+    cache_key = (
+        query_text,
+        tuple(category_filters or []),
+        year_from_text,
+        year_to_text,
+        limit_value,
+    )
+    embedding_space_cache, embedding_space_cache_lock = ensure_embedding_space_cache(request.app)
+    with embedding_space_cache_lock:
+        cached = embedding_space_cache.get(cache_key)
+    if cached:
+        return JSONResponse(cached)
+
+    try:
+        with db_conn(request.app) as conn:
+            columns = paper_columns(conn)
+            required_columns = {"corpus_id", "massimo_title", "massimo_abstract", "massimo_metadata"}
+            if is_legacy_arxiv_schema(columns) or not required_columns.issubset(columns):
+                return JSONResponse(
+                    {"error": "Massimo embedding columns are not available in this database."},
+                    status_code=400,
+                )
+
+            results = search(
+                query_text,
+                k=limit_value,
+                conn=conn,
+                categories=category_filters,
+                year_from=year_from_value,
+                year_to=year_to_value,
+                embedding="massimo",
+            )
+            corpus_ids = [result["arxiv_id"] for result in results]
+            vectors_by_id = fetch_massimo_vectors(conn, corpus_ids)
+            response_data = build_massimo_embedding_space(query_text, results, vectors_by_id)
+    except Exception as exc:
+        return JSONResponse({"error": str(exc)}, status_code=500)
+
+    with embedding_space_cache_lock:
+        embedding_space_cache[cache_key] = response_data
+    return JSONResponse(response_data)
 
 
 @app.post("/search")
