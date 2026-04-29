@@ -402,20 +402,22 @@ summary:focus-visible,
 
 .field-group--query input {
   min-height: 4rem;
-  padding-left: 3rem;
   font-size: 1.05rem;
 }
 
 .input-shell {
   position: relative;
+  --field-icon-left: 1rem;
+  --field-icon-size: 1.1rem;
+  --field-icon-gap: 0.9rem;
 }
 
 .field-icon {
   position: absolute;
   top: 50%;
-  left: 1rem;
-  width: 1.1rem;
-  height: 1.1rem;
+  left: var(--field-icon-left);
+  width: var(--field-icon-size);
+  height: var(--field-icon-size);
   transform: translateY(-50%);
   fill: none;
   stroke: var(--color-muted);
@@ -448,6 +450,11 @@ input:hover,
 select:hover,
 textarea:hover {
   border-color: var(--color-border-strong);
+}
+
+.field-group--query .input-shell input[type="text"] {
+  min-height: 4rem;
+  padding-left: calc(var(--field-icon-left) + var(--field-icon-size) + var(--field-icon-gap));
 }
 
 .segmented-control {
