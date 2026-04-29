@@ -123,15 +123,6 @@
             </div>
           </div>
 
-          <div class="field-group">
-            <label for="results-k">Results shown</label>
-            <select id="results-k" name="k">
-              {% for option in [8, 12, 16, 24, 32] %}
-              <option value="{{ option }}" {% if k == option %}selected{% endif %}>{{ option }}</option>
-              {% endfor %}
-            </select>
-          </div>
-
           <p class="sidebar-note">The current library supports subject and year filters. Keep the first pass broad, then narrow only if needed.</p>
         </div>
 

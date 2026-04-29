@@ -4,6 +4,7 @@ import threading
 import time
 from contextlib import asynccontextmanager, contextmanager
 from html import escape
+from math import ceil
 from pathlib import Path
 from typing import Optional
 from urllib.parse import quote, urlencode
@@ -30,9 +31,10 @@ templates.env.filters["url_encode"] = lambda s: quote(str(s), safe="")
 
 DEFAULT_RESULTS_K = 12
 MAX_RESULTS_K = 50
+PAPER_PAGE_SIZE = 10
 DEFAULT_MODE = "papers"
 DEFAULT_SORT = "relevance"
-DEFAULT_EMBEDDING = "nomic"
+DEFAULT_EMBEDDING = "massimo"
 PAPER_SORTS = {"relevance", "newest", "oldest"}
 
 
@@ -81,6 +83,14 @@ def clamp_k(value: str | int | None) -> int:
     return max(1, min(parsed, MAX_RESULTS_K))
 
 
+def normalize_page(value: str | int | None) -> int:
+    try:
+        parsed = int(value) if value is not None else 1
+    except (TypeError, ValueError):
+        parsed = 1
+    return max(1, parsed)
+
+
 def clean_year(value: str | None) -> tuple[str, int | None]:
     raw = (value or "").strip()
     if not raw:
@@ -119,6 +129,22 @@ def safe_internal_path(path: str, fallback: str) -> str:
     return fallback
 
 
+def paper_columns(conn) -> set[str]:
+    with conn.cursor() as cur:
+        cur.execute(
+            """
+            SELECT column_name
+            FROM information_schema.columns
+            WHERE table_schema = 'public' AND table_name = 'papers'
+            """
+        )
+        return {row[0] for row in cur.fetchall()}
+
+
+def is_legacy_arxiv_schema(columns: set[str]) -> bool:
+    return "arxiv_id" in columns and "embedding" in columns and "corpus_id" not in columns
+
+
 def build_results_url(
     *,
     q: str = "",
@@ -129,14 +155,21 @@ def build_results_url(
     year_from: str = "",
     year_to: str = "",
     embedding: str = DEFAULT_EMBEDDING,
+    page: int = 1,
 ) -> str:
+    mode_value = normalize_mode(mode)
     params = {
         "q": q,
-        "mode": normalize_mode(mode),
-        "sort": normalize_sort(sort),
-        "k": clamp_k(k),
-        "embedding": normalize_embedding(embedding),
+        "mode": mode_value,
     }
+    if mode_value == "authors":
+        params["k"] = clamp_k(k)
+    else:
+        params["sort"] = normalize_sort(sort)
+        params["embedding"] = normalize_embedding(embedding)
+        page_value = normalize_page(page)
+        if page_value > 1:
+            params["page"] = page_value
     if categories.strip():
         params["categories"] = categories.strip()
     if year_from.strip():
@@ -158,12 +191,14 @@ def build_results_context(
     year_from: str = "",
     year_to: str = "",
     embedding: str = DEFAULT_EMBEDDING,
+    page: str | int | None = 1,
 ) -> dict:
     query_text = q.strip()
     mode = normalize_mode(mode)
     sort = normalize_sort(sort)
     k_value = clamp_k(k)
     embedding_value = normalize_embedding(embedding)
+    page_value = normalize_page(page)
     categories_text = categories.strip()
     year_from_text, year_from_value = clean_year(year_from)
     year_to_text, year_to_value = clean_year(year_to)
@@ -173,6 +208,7 @@ def build_results_context(
         year_from_text, year_to_text = str(year_from_value), str(year_to_value)
 
     results: list[dict] = []
+    all_paper_results: list[dict] = []
     error_message = ""
 
     if query_text:
@@ -182,20 +218,64 @@ def build_results_context(
                     results = search_by_name(query_text, k=k_value, conn=conn)
                 else:
                     category_filters = [c for c in re.split(r"[,\s]+", categories_text) if c] or None
-                    results = search(
+                    all_paper_results = search(
                         query_text,
-                        k=k_value,
+                        k=MAX_RESULTS_K,
                         conn=conn,
                         categories=category_filters,
                         year_from=year_from_value,
                         year_to=year_to_value,
                         embedding=embedding_value,
                     )
-                    results = sort_paper_results(results, sort)
+                    all_paper_results = sort_paper_results(all_paper_results, sort)
         except Exception as exc:
             error_message = str(exc)
 
+    if mode == "papers":
+        total_result_count = len(all_paper_results)
+        if total_result_count:
+            page_count = ceil(total_result_count / PAPER_PAGE_SIZE)
+            page_value = min(page_value, page_count)
+            page_start_index = (page_value - 1) * PAPER_PAGE_SIZE
+            page_end_index = page_start_index + PAPER_PAGE_SIZE
+            results = all_paper_results[page_start_index:page_end_index]
+            page_start = page_start_index + 1
+            page_end = page_start_index + len(results)
+        else:
+            page_count = 0
+            page_value = 1
+            page_start = 0
+            page_end = 0
+    else:
+        total_result_count = len(results)
+        page_count = 0
+        page_value = 1
+        page_start = 1 if results else 0
+        page_end = len(results)
+
     current_url = build_current_url(request)
+
+    def page_url(page_number: int) -> str:
+        return build_results_url(
+            q=query_text,
+            mode=mode,
+            sort=sort,
+            k=k_value,
+            categories=categories_text,
+            year_from=year_from_text,
+            year_to=year_to_text,
+            embedding=embedding_value,
+            page=page_number,
+        )
+
+    page_links = [
+        {
+            "page": page_number,
+            "url": page_url(page_number),
+            "is_current": page_number == page_value,
+        }
+        for page_number in range(1, page_count + 1)
+    ]
 
     return {
         "query": query_text,
@@ -208,6 +288,19 @@ def build_results_context(
         "year_to": year_to_text,
         "results": results,
         "result_count": len(results),
+        "total_result_count": total_result_count,
+        "max_results_k": MAX_RESULTS_K,
+        "page": page_value,
+        "page_count": page_count,
+        "page_size": PAPER_PAGE_SIZE,
+        "page_start": page_start,
+        "page_end": page_end,
+        "show_pagination": mode == "papers" and bool(query_text) and total_result_count > 0,
+        "has_previous_page": mode == "papers" and page_value > 1,
+        "has_next_page": mode == "papers" and page_count > page_value,
+        "previous_page_url": page_url(page_value - 1) if mode == "papers" and page_value > 1 else "",
+        "next_page_url": page_url(page_value + 1) if mode == "papers" and page_count > page_value else "",
+        "page_links": page_links,
         "has_query": bool(query_text),
         "error_message": error_message,
         "current_url": current_url,
@@ -252,6 +345,7 @@ def results_page(
     year_from: str = Query(default=""),
     year_to: str = Query(default=""),
     embedding: str = Query(default=DEFAULT_EMBEDDING),
+    page: str = Query(default="1"),
 ):
     context = build_results_context(
         request,
@@ -263,6 +357,7 @@ def results_page(
         year_from=year_from,
         year_to=year_to,
         embedding=embedding,
+        page=page,
     )
     return templates.TemplateResponse(request, "results.html", context)
 
@@ -314,8 +409,10 @@ def author_detail(
 @app.get("/paper/{arxiv_id}/related", response_class=HTMLResponse)
 def paper_related(request: Request, arxiv_id: str):
     with db_conn(request.app) as conn:
+        columns = paper_columns(conn)
+        id_column = "arxiv_id" if is_legacy_arxiv_schema(columns) else "corpus_id"
         with conn.cursor() as cur:
-            cur.execute("SELECT title, abstract FROM papers WHERE corpus_id = %s", (arxiv_id,))
+            cur.execute(f"SELECT title, abstract FROM papers WHERE {id_column} = %s", (arxiv_id,))
             row = cur.fetchone()
         if not row:
             return HTMLResponse("<p>Paper not found.</p>")
@@ -349,30 +446,52 @@ def paper_detail(
     return_to: str = Query(default=""),
 ):
     with db_conn(request.app) as conn:
+        columns = paper_columns(conn)
         with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
-            cur.execute(
-                "SELECT corpus_id, s2_paper_id, url, title, abstract, "
-                "fields_of_study, year, venue "
-                "FROM papers WHERE corpus_id = %s",
-                (arxiv_id,),
-            )
+            if is_legacy_arxiv_schema(columns):
+                cur.execute(
+                    "SELECT arxiv_id, title, abstract, categories, authors, published "
+                    "FROM papers WHERE arxiv_id = %s",
+                    (arxiv_id,),
+                )
+            else:
+                cur.execute(
+                    "SELECT corpus_id, s2_paper_id, url, title, abstract, "
+                    "fields_of_study, year, venue "
+                    "FROM papers WHERE corpus_id = %s",
+                    (arxiv_id,),
+                )
             row = cur.fetchone()
     if not row:
         return HTMLResponse("<p>Paper not found in local database.</p>", status_code=404)
 
     from query import PaperYear
-    year = row["year"]
-    paper = {
-        "arxiv_id":    row["corpus_id"],
-        "s2_paper_id": row["s2_paper_id"],
-        "url":         row["url"] or "",
-        "title":       row["title"],
-        "abstract":    row["abstract"] or "",
-        "categories":  row["fields_of_study"] or [],
-        "authors":     [],
-        "published":   PaperYear(year) if year else None,
-        "venue":       row["venue"] or "",
-    }
+    if "arxiv_id" in row:
+        published = row["published"]
+        paper = {
+            "arxiv_id":    row["arxiv_id"],
+            "s2_paper_id": "",
+            "url":         f"https://arxiv.org/abs/{row['arxiv_id']}",
+            "title":       row["title"],
+            "abstract":    row["abstract"] or "",
+            "categories":  row["categories"] or [],
+            "authors":     row["authors"] or [],
+            "published":   PaperYear(published.year) if published else None,
+            "venue":       "",
+        }
+    else:
+        year = row["year"]
+        paper = {
+            "arxiv_id":    row["corpus_id"],
+            "s2_paper_id": row["s2_paper_id"],
+            "url":         row["url"] or "",
+            "title":       row["title"],
+            "abstract":    row["abstract"] or "",
+            "categories":  row["fields_of_study"] or [],
+            "authors":     [],
+            "published":   PaperYear(year) if year else None,
+            "venue":       row["venue"] or "",
+        }
     fallback = "/results"
     return templates.TemplateResponse(
         request,
@@ -394,7 +513,8 @@ S2_FIELDS = (
 def _fetch_s2_paper(arxiv_id: str) -> tuple[Optional[dict], Optional[str]]:
     """Fetch a paper from Semantic Scholar with exponential-backoff retry on 429.
     Returns (body_dict, error_string) — exactly one will be non-None."""
-    url = f"https://api.semanticscholar.org/graph/v1/paper/CorpusId:{arxiv_id}"
+    paper_ref = f"ARXIV:{arxiv_id}" if "." in arxiv_id else f"CorpusId:{arxiv_id}"
+    url = f"https://api.semanticscholar.org/graph/v1/paper/{paper_ref}"
     try:
         resp = None
         for attempt in range(4):
@@ -445,7 +565,10 @@ def _build_graph(center_id: str, refs: list, cites: list, in_db: set) -> dict:
     nodes = [{"id": center_id, "arxiv_id": center_id, "is_center": True, "is_citation": False, "in_db": True}]
     links = []
     for n in refs + cites:
-        nodes.append({**n, "in_db": n["s2_id"] in in_db if n["s2_id"] else False, "is_center": False})
+        node_in_db = (n["s2_id"] in in_db if n["s2_id"] else False) or (
+            n["arxiv_id"] in in_db if n["arxiv_id"] else False
+        )
+        nodes.append({**n, "in_db": node_in_db, "is_center": False})
         if n["is_citation"]:
             links.append({"source": n["id"], "target": center_id, "is_citation": True})
         else:
@@ -469,8 +592,15 @@ def paper_references(request: Request, arxiv_id: str):
 
     all_s2_ids = [n["s2_id"] for n in refs + cites if n["s2_id"]]
     in_db = set()
-    if all_s2_ids:
-        with db_conn(request.app) as conn:
+    with db_conn(request.app) as conn:
+        columns = paper_columns(conn)
+        if is_legacy_arxiv_schema(columns):
+            arxiv_ids = [n["arxiv_id"] for n in refs + cites if n["arxiv_id"]]
+            if arxiv_ids:
+                with conn.cursor() as cur:
+                    cur.execute("SELECT arxiv_id FROM papers WHERE arxiv_id = ANY(%s)", (arxiv_ids,))
+                    in_db = {row[0] for row in cur.fetchall()}
+        elif all_s2_ids:
             with conn.cursor() as cur:
                 cur.execute("SELECT s2_paper_id FROM papers WHERE s2_paper_id = ANY(%s)", (all_s2_ids,))
                 in_db = {row[0] for row in cur.fetchall()}

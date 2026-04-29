@@ -9,6 +9,7 @@ Usage:
 """
 import argparse
 import sys
+import threading
 from pathlib import Path
 
 import numpy as np
@@ -33,6 +34,8 @@ _NOMIC_DIM = 384
 _model: SentenceTransformer | None = None
 _andrew_proj = None
 _audrey_head = None
+_schema_columns_cache: set[str] | None = None
+_encode_lock = threading.Lock()
 
 
 class PaperYear:
@@ -58,10 +61,18 @@ def _nomic_model() -> SentenceTransformer:
 
 def _nomic_vec(text: str, task: str = "search_query") -> np.ndarray:
     """Encode text with Nomic, truncate to 384-dim (Matryoshka), and re-normalise."""
-    raw = _nomic_model().encode(f"{task}: {clean_text(text)}", normalize_embeddings=True)
+    with _encode_lock:
+        raw = _nomic_model().encode(f"{task}: {clean_text(text)}", normalize_embeddings=True)
     vec = raw[:_NOMIC_DIM].astype(np.float32)
     norm = np.linalg.norm(vec)
     return vec / norm if norm > 0 else vec
+
+
+def _nomic_vec_full(text: str, task: str = "search_query") -> np.ndarray:
+    """Encode text with Nomic and keep the full 768-dim vector for legacy DBs."""
+    with _encode_lock:
+        vec = _nomic_model().encode(f"{task}: {clean_text(text)}", normalize_embeddings=True)
+    return vec.astype(np.float32)
 
 
 def embed_query(text: str) -> list[float]:
@@ -69,10 +80,11 @@ def embed_query(text: str) -> list[float]:
 
 
 def embed_document(title: str, abstract: str) -> list[float]:
-    raw = _nomic_model().encode(
-        f"search_document: {clean_text(title)}. {clean_text(abstract)}",
-        normalize_embeddings=True,
-    )
+    with _encode_lock:
+        raw = _nomic_model().encode(
+            f"search_document: {clean_text(title)}. {clean_text(abstract)}",
+            normalize_embeddings=True,
+        )
     vec = raw[:_NOMIC_DIM].astype(np.float32)
     norm = np.linalg.norm(vec)
     return (vec / norm if norm > 0 else vec).tolist()
@@ -124,6 +136,27 @@ def _poincare_dist(x: "torch.Tensor", y: "torch.Tensor", c: float = 1.0) -> "tor
 def _vec_to_np(v) -> np.ndarray:
     """Convert a pgvector halfvec/vector cell to float32 numpy array."""
     return np.asarray(v.to_numpy() if hasattr(v, "to_numpy") else v, dtype=np.float32)
+
+
+def _paper_columns(conn) -> set[str]:
+    """Return papers table columns; cached because schema is stable per app run."""
+    global _schema_columns_cache
+    if _schema_columns_cache is None:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                SELECT column_name
+                FROM information_schema.columns
+                WHERE table_schema = 'public' AND table_name = 'papers'
+                """
+            )
+            _schema_columns_cache = {row[0] for row in cur.fetchall()}
+    return _schema_columns_cache
+
+
+def _is_legacy_arxiv_schema(conn) -> bool:
+    columns = _paper_columns(conn)
+    return "arxiv_id" in columns and "embedding" in columns and "corpus_id" not in columns
 
 
 # ── Andrew encoder ─────────────────────────────────────────────────────────────
@@ -241,6 +274,22 @@ def _extra_where(categories, year_from, year_to) -> tuple[str, list]:
     return sql, params
 
 
+def _legacy_extra_where(categories, year_from, year_to) -> tuple[str, list]:
+    """Build optional AND-clauses and params for the old arXiv schema."""
+    clauses, params = [], []
+    if categories:
+        clauses.append("categories && %s::text[]")
+        params.append(categories)
+    if year_from is not None:
+        clauses.append("published >= make_date(%s, 1, 1)")
+        params.append(year_from)
+    if year_to is not None:
+        clauses.append("published < make_date(%s + 1, 1, 1)")
+        params.append(year_to)
+    sql = (" AND " + " AND ".join(clauses)) if clauses else ""
+    return sql, params
+
+
 # ── Per-embedding search implementations ───────────────────────────────────────
 
 def _search_nomic(query, k, conn, categories, year_from, year_to) -> list[dict]:
@@ -260,6 +309,41 @@ def _search_nomic(query, k, conn, categories, year_from, year_to) -> list[dict]:
             [vec] + extra_params + [vec, k],
         )
         return [_row_to_paper(r) for r in cur.fetchall()]
+
+
+def _search_legacy_arxiv(query, k, conn, categories, year_from, year_to) -> list[dict]:
+    """Search the old local arXiv schema that stores one 768-dim embedding column."""
+    vec = _nomic_vec_full(query, task="search_query")
+    extra, extra_params = _legacy_extra_where(categories, year_from, year_to)
+    with conn.cursor() as cur:
+        cur.execute("SET hnsw.ef_search = 80")
+        cur.execute(
+            f"""
+            SELECT arxiv_id, title, abstract, categories, authors, published,
+                   1 - (embedding <=> %s::vector) AS similarity
+            FROM papers
+            WHERE embedding IS NOT NULL{extra}
+            ORDER BY embedding <=> %s::vector
+            LIMIT %s
+            """,
+            [vec] + extra_params + [vec, k],
+        )
+        rows = cur.fetchall()
+
+    results = []
+    for arxiv_id, title, abstract, categories, authors, published, similarity in rows:
+        results.append({
+            "arxiv_id":   arxiv_id,
+            "s2_paper_id": "",
+            "url":        f"https://arxiv.org/abs/{arxiv_id}",
+            "title":      title or "",
+            "abstract":   abstract or "",
+            "authors":    authors or [],
+            "categories": categories or [],
+            "published":  published,
+            "similarity": float(similarity),
+        })
+    return results
 
 
 def _search_andrew(query, k, conn, categories, year_from, year_to) -> list[dict]:
@@ -369,6 +453,8 @@ def search(
         register_vector(conn)
 
     try:
+        if _is_legacy_arxiv_schema(conn):
+            return _search_legacy_arxiv(query, k, conn, categories, year_from, year_to)
         if embedding == "andrew":
             return _search_andrew(query, k, conn, categories, year_from, year_to)
         elif embedding == "massimo":
@@ -394,27 +480,62 @@ def related_search(
         conn = psycopg2.connect(POSTGRES_CONN_STRING)
         register_vector(conn)
 
-    vec = np.array(embed_document(title, abstract), dtype=np.float32)
+    legacy_schema = _is_legacy_arxiv_schema(conn)
+    vec = (
+        _nomic_vec_full(f"{title}. {abstract}", task="search_document")
+        if legacy_schema
+        else np.array(embed_document(title, abstract), dtype=np.float32)
+    )
 
     with conn.cursor() as cur:
-        cur.execute("SET ivfflat.probes = 10")
-        cur.execute(
-            """
-            SELECT corpus_id, s2_paper_id, url, title, abstract, fields_of_study, year,
-                   1 - (nomic <=> %s::vector) AS similarity
-            FROM papers
-            WHERE nomic IS NOT NULL AND corpus_id != %s
-            ORDER BY nomic <=> %s::vector
-            LIMIT %s
-            """,
-            (vec, exclude_id, vec, k),
-        )
+        if legacy_schema:
+            cur.execute("SET hnsw.ef_search = 80")
+            cur.execute(
+                """
+                SELECT arxiv_id, title, abstract, categories, authors, published,
+                       1 - (embedding <=> %s::vector) AS similarity
+                FROM papers
+                WHERE embedding IS NOT NULL AND arxiv_id != %s
+                ORDER BY embedding <=> %s::vector
+                LIMIT %s
+                """,
+                (vec, exclude_id, vec, k),
+            )
+        else:
+            cur.execute("SET ivfflat.probes = 10")
+            cur.execute(
+                """
+                SELECT corpus_id, s2_paper_id, url, title, abstract, fields_of_study, year,
+                       1 - (nomic <=> %s::vector) AS similarity
+                FROM papers
+                WHERE nomic IS NOT NULL AND corpus_id != %s
+                ORDER BY nomic <=> %s::vector
+                LIMIT %s
+                """,
+                (vec, exclude_id, vec, k),
+            )
         rows = cur.fetchall()
 
     if close_after:
         conn.close()
 
-    return [_row_to_paper(r) for r in rows]
+    if not legacy_schema:
+        return [_row_to_paper(r) for r in rows]
+
+    return [
+        {
+            "arxiv_id":   row[0],
+            "s2_paper_id": "",
+            "url":        f"https://arxiv.org/abs/{row[0]}",
+            "title":      row[1] or "",
+            "abstract":   row[2] or "",
+            "authors":    row[4] or [],
+            "categories": row[3] or [],
+            "published":  row[5],
+            "similarity": float(row[6]),
+        }
+        for row in rows
+    ]
 
 
 # ── CLI ────────────────────────────────────────────────────────────────────────

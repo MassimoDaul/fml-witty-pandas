@@ -127,7 +127,6 @@
     const categoriesInput = document.querySelector('input[name="categories"]');
     const yearInputs = document.querySelectorAll('input[name="year_from"], input[name="year_to"]');
     const sortSelect = sortControl?.querySelector("select");
-    const paperCountSelect = document.getElementById("results-k");
     const authorCountSelect = document.getElementById("results-k-authors");
 
     if (paperFilterBlock) {
@@ -139,10 +138,6 @@
       yearInputs.forEach((field) => {
         field.disabled = !showPaperFilters;
       });
-    }
-
-    if (paperCountSelect) {
-      paperCountSelect.disabled = mode !== "papers";
     }
 
     if (authorCountSelect) {

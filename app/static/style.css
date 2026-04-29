@@ -134,7 +134,8 @@ button,
 .site-nav__link,
 .brand,
 .result-card,
-.card-overlay-link {
+.card-overlay-link,
+.pagination__link {
   cursor: pointer;
 }
 
@@ -148,7 +149,8 @@ summary:focus-visible,
 .site-nav__link:focus-visible,
 .card-overlay-link:focus-visible,
 .query-chip:focus-visible,
-.bookmark-button:focus-visible {
+.bookmark-button:focus-visible,
+.pagination__link:focus-visible {
   outline: none;
   box-shadow: var(--focus-ring);
 }
@@ -815,6 +817,71 @@ body.filters-open .mobile-drawer-backdrop {
   gap: 1rem;
 }
 
+.pagination {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-top: 1.15rem;
+  padding: 0.8rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: rgba(255, 253, 249, 0.78);
+  box-shadow: var(--shadow-sm);
+}
+
+.pagination__pages {
+  display: inline-flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.35rem;
+}
+
+.pagination__link,
+.pagination__current,
+.pagination__disabled {
+  min-width: 2.35rem;
+  min-height: 2.35rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.42rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  line-height: 1;
+  text-decoration: none;
+}
+
+.pagination__link {
+  border: 1px solid var(--color-border);
+  background: var(--color-surface-strong);
+  color: var(--color-muted-strong);
+  transition: border-color 180ms ease, color 180ms ease, background-color 180ms ease;
+}
+
+.pagination__link:hover {
+  border-color: var(--color-border-strong);
+  background: var(--color-accent-soft);
+  color: var(--color-accent-strong);
+}
+
+.pagination__current {
+  background: var(--color-accent);
+  color: var(--color-surface-strong);
+}
+
+.pagination__disabled {
+  border: 1px solid transparent;
+  color: var(--color-muted);
+  opacity: 0.55;
+}
+
+.pagination__edge {
+  min-width: 5.7rem;
+}
+
 .result-card {
   position: relative;
   padding: 1.25rem;
@@ -1155,6 +1222,19 @@ body.filters-open .mobile-drawer-backdrop {
   .state-panel,
   .detail-panel {
     border-radius: 22px;
+  }
+
+  .pagination {
+    justify-content: center;
+  }
+
+  .pagination__pages {
+    order: -1;
+    width: 100%;
+  }
+
+  .pagination__edge {
+    flex: 1 1 calc(50% - 0.4rem);
   }
 }
 
