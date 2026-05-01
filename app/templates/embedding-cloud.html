@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% from "macros.html" import site_header %}
+
+{% block title %}Cephalo | Embedding Cloud{% endblock %}
+{% block body_class %}page-cloud{% endblock %}
+
+{% block head %}
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.165.0/build/three.module.min.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.165.0/examples/jsm/"
+  }
+}
+</script>
+{% endblock %}
+
+{% block body %}
+{{ site_header("cloud") }}
+
+<main id="main-content" class="cloud-page">
+  <div class="cloud-canvas-wrap" id="cloud-canvas-wrap">
+    <canvas id="cloud-canvas"></canvas>
+
+    <div class="cloud-overlay">
+      <div class="cloud-header">
+        <div class="cloud-header__copy">
+          <p class="eyebrow eyebrow--small cloud-eyebrow">3D visualisation</p>
+          <h1 class="cloud-title">Embedding cloud</h1>
+          <p class="cloud-subtitle">Top 1,000 papers by citation count &mdash; PCA over abstract embeddings. Colour encodes publication year; dot size encodes citation count.</p>
+        </div>
+
+        <div class="cloud-stats" id="cloud-stats" hidden aria-label="Visualisation statistics">
+          <div class="stat-card stat-card--dark">
+            <span class="stat-card__label">Papers</span>
+            <strong id="cloud-stat-total">&mdash;</strong>
+          </div>
+          <div class="stat-card stat-card--dark">
+            <span class="stat-card__label">PC1</span>
+            <strong id="cloud-stat-pc1">&mdash;</strong>
+          </div>
+          <div class="stat-card stat-card--dark">
+            <span class="stat-card__label">PC2</span>
+            <strong id="cloud-stat-pc2">&mdash;</strong>
+          </div>
+          <div class="stat-card stat-card--dark">
+            <span class="stat-card__label">PC3</span>
+            <strong id="cloud-stat-pc3">&mdash;</strong>
+          </div>
+        </div>
+      </div>
+
+      <div class="cloud-legend" id="cloud-legend" hidden aria-label="Colour and size legend">
+        <div class="cloud-legend__item">
+          <span class="cloud-legend__year-bar" aria-hidden="true"></span>
+          <span class="cloud-legend__labels">
+            <span id="cloud-year-min">older</span>
+            <span id="cloud-year-max">newer</span>
+          </span>
+        </div>
+        <div class="cloud-legend__item">
+          <svg class="cloud-legend__size-demo" viewBox="0 0 64 22" aria-hidden="true">
+            <circle cx="9"  cy="11" r="3.5" fill="rgba(255,253,249,0.45)"/>
+            <circle cx="28" cy="11" r="6.5" fill="rgba(255,253,249,0.45)"/>
+            <circle cx="52" cy="11" r="10"  fill="rgba(255,253,249,0.45)"/>
+          </svg>
+          <span>Citation count</span>
+        </div>
+        <p class="cloud-legend__hint">Drag to rotate &middot; Scroll to zoom &middot; Click a point to open</p>
+      </div>
+    </div>
+
+    <p class="cloud-status" id="cloud-status" aria-live="polite">Loading point cloud&hellip;</p>
+    <div class="cloud-tooltip" id="cloud-tooltip" role="tooltip"></div>
+  </div>
+</main>
+{% endblock %}
+
+{% block scripts %}
+<script type="module" src="/static/embedding-cloud.js?v=3d-cloud-20260429"></script>
+{% endblock %}

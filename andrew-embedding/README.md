@@ -20,21 +20,24 @@ Builds the heterogeneous graph, defines the model, and runs training.
 
 **Graph construction**
 - Fetches all Nomic embeddings from the `nomic` column.
-- Builds KNN edges (k=10) from cosine similarity over Nomic vectors — these encode semantic proximity as graph structure.
+- Builds KNN edges (k=30) from cosine similarity over Nomic vectors — these encode semantic proximity as graph structure.
 - Adds `published_in` (paper→venue) and `has_field` (paper→field) edges from paper metadata.
+- Venue and field node features are 384-dim Nomic-averaged embeddings (L2-normalised mean of member paper vectors) rather than random initialisations.
 - Performs an 80/20 edge split: all edges are used for message passing; only the train split contributes to the contrastive loss; the val split is held out for loss monitoring.
 
 **Model: `PaperGNN`**
 Two-branch architecture:
-- **GNN branch**: projects all node types to 256-dim, runs two HGTConv layers (4 attention heads each), then projects paper nodes to 128-dim (`gnn_out`).
+- **GNN branch**: projects all node types to 512-dim, runs three HGTConv layers (8 attention heads each), then projects paper nodes to 128-dim (`gnn_out`).
 - **Base branch**: directly projects the 384-dim Nomic embedding to 128-dim (`paper_proj`).
-- Final output: `0.7 * gnn_out + 0.3 * base`. The base branch regularises training and serves as the query encoder at inference time (see `query.py`).
+- Final output: `α * gnn_out + (1-α) * base`, where α is a learnable sigmoid-gated parameter (initialised at ≈0.70). The base branch regularises training and serves as the query encoder at inference time (see `query.py`).
 
 **Training**
-- Contrastive loss with temperature τ=0.1 on sampled positive (connected) and negative (random) edge pairs.
-- Adam, LR=1e-3, 50 epochs, batch size 2048.
+- Per-epoch loop runs `STEPS_PER_EPOCH=10` inner gradient steps, each sharing one GNN forward pass.
+- KNN contrastive loss uses hard negative mining: `NEG_POOL_SIZE=40` random candidates are sampled per anchor; the hardest (highest cosine similarity) is chosen as the negative.
+- A field-level contrastive term (same-field paper pairs as positives) is added at weight `FIELD_LOSS_WEIGHT=0.5`.
+- Temperature τ=0.05, Adam LR=1e-3, 50 epochs, batch size 1024.
 - Checkpoint saved when both train loss and val loss improve simultaneously.
-- Recall@20 logged every 5 epochs as a sanity metric during training (ground truth = held-out val KNN edges).
+- Recall@20 and current α value logged every 5 epochs.
 
 **Requirements**: CUDA GPU. The training script asserts `torch.cuda.is_available()` at startup.
 
@@ -50,9 +53,12 @@ Exports trained embeddings to the database. Loads a checkpoint, runs full-graph 
 
 Run this once after training completes (or whenever the checkpoint is updated).
 
+The `--autoresearch` flag writes to the `autoresearch_new` column instead and loads the checkpoint from `autoresearch/weights/`.
+
 ```bash
 python andrew-embedding/embed.py
 python andrew-embedding/embed.py --checkpoint weights/my_checkpoint.pt
+python andrew-embedding/embed.py --autoresearch True
 ```
 
 ---
@@ -69,7 +75,7 @@ Query encoder for the `andrew` column at inference time.
 3. Apply the projection and L2-normalise → 128-dim query vector.
 4. Run `search_similar` against the `andrew` column.
 
-**Known limitation**: stored document vectors blend the GNN branch (70%) with `paper_proj` (30%), while query vectors come from `paper_proj` alone. Cosine distances between query and document are therefore slightly lower than paper-to-paper distances. Ranking order is not affected.
+**Known limitation**: stored document vectors blend the GNN branch (weight α) with `paper_proj` (weight 1-α), where α is the learned blend parameter, while query vectors come from `paper_proj` alone. Cosine distances between query and document are therefore slightly lower than paper-to-paper distances. Ranking order is not affected.
 
 ```bash
 python andrew-embedding/query.py "attention mechanisms in transformers"
@@ -96,6 +102,37 @@ Directory for model checkpoints. Each checkpoint is a `torch.save` dict with key
 
 ---
 
+### `autoresearch/`
+
+Autonomous hyperparameter/architecture search loop powered by an LLM agent.
+
+- **`exec.py`** — orchestrator loop. Drives a litellm-backed agent through up to 20 tool-call steps: read files → hypothesise → modify `train.py` → run experiment → write report.
+- **`tools.py`** — tool implementations exposed to the agent: `read_file`, `write_file` (sandboxed to `train.py` and `EXPERIMENTS.md`), `run_experiment` (chains `train.py → embed.py → eval.py` with `--autoresearch True`), `create_report` (appends structured results to `EXPERIMENTS.md`).
+- **`EXPERIMENTS.md`** — append-only log of every autoresearch iteration.
+- **`weights/checkpoint_best.pt`** — best checkpoint produced by autoresearch runs (separate from the main `weights/` checkpoint).
+
+Requires `LITELLM_MODEL` and `LITELLM_API_KEY` env vars in `.env`.
+
+```bash
+cd andrew-embedding/autoresearch
+python exec.py
+```
+
+---
+
+### `evaluation/generate_andrew_results.py`
+
+Runs all benchmark queries through the Andrew search pipeline and writes results to a JSONL file for offline evaluation.
+
+```bash
+python andrew-embedding/evaluation/generate_andrew_results.py
+python andrew-embedding/evaluation/generate_andrew_results.py \
+    --queries evaluation/benchmark_queries.jsonl \
+    --output submissions/andrew-results.jsonl --k 10 --nprobe 25
+```
+
+---
+
 ## Typical workflow
 
 ```
@@ -110,6 +147,12 @@ python andrew-embedding/embed.py
 
 # 4. Query
 python andrew-embedding/query.py "your query here"
+
+# 5. (Optional) Run benchmark evaluation
+python andrew-embedding/evaluation/generate_andrew_results.py
+
+# 6. (Optional) Run autonomous hyperparameter search
+cd andrew-embedding/autoresearch && python exec.py
 ```
 
 ---
@@ -118,12 +161,15 @@ python andrew-embedding/query.py "your query here"
 
 | Constant | Value | Description |
 |----------|-------|-------------|
-| `HIDDEN_DIM` | 256 | HGTConv hidden dimension |
+| `HIDDEN_DIM` | 512 | HGTConv hidden dimension |
 | `OUT_DIM` | 128 | Output embedding dimension (must match DB schema) |
-| `NUM_HEADS` | 4 | Attention heads per HGTConv layer |
-| `NUM_LAYERS` | 2 | Number of HGTConv layers |
+| `NUM_HEADS` | 8 | Attention heads per HGTConv layer |
+| `NUM_LAYERS` | 3 | Number of HGTConv layers |
 | `LR` | 1e-3 | Adam learning rate |
 | `EPOCHS` | 50 | Training epochs |
-| `BATCH_SIZE` | 2048 | Contrastive pairs per step |
-| `TAU` | 0.1 | Contrastive temperature |
-| `K_NEIGHBORS` | 10 | KNN edges per paper (from Nomic cosine similarity) |
+| `BATCH_SIZE` | 1024 | Contrastive pairs per step |
+| `TAU` | 0.05 | Contrastive temperature |
+| `K_NEIGHBORS` | 30 | KNN edges per paper (from Nomic cosine similarity) |
+| `STEPS_PER_EPOCH` | 10 | Inner gradient steps per epoch (share one GNN forward pass) |
+| `FIELD_LOSS_WEIGHT` | 0.5 | Weight of the field-level contrastive term |
+| `NEG_POOL_SIZE` | 40 | Hard negative candidate pool size per anchor |

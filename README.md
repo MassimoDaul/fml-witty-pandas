@@ -17,6 +17,7 @@ Cephalo supports a researcher workflow from query to follow-up reading:
 3. **Refine**: Users can constrain results by subject / arXiv-style field, year range, sorting mode, and result count.
 4. **Inspect**: Each paper page shows title, abstract, venue/year, field tags, Semantic Scholar link, and related papers.
 5. **Explore citation context**: Paper pages include a D3 reference/citation graph with cached Semantic Scholar lookups.
+6. **Visualize embedding space**: The results page exposes a PCA-projected 2D scatter of Massimo embedding vectors for the query and its top results, with a 3D Three.js embedding cloud view in progress.
 
 The interface is intentionally stable across retrieval methods: the same user workflow can support different embedding backends, so retrieval quality can improve without changing how users search.
 
@@ -25,6 +26,8 @@ The interface is intentionally stable across retrieval methods: the same user wo
 ## Dataset
 
 The project uses a local Postgres database containing **25,000 Semantic Scholar papers**.
+
+> Note: we decided to host the 25k paper database locally, but accessing this database is a bit tricky (involves downloading Tailscale). For demo purposes we've uploaded a subset of 1000 papers to Supabase.
 
 | Field | Value |
 |---|---|
@@ -144,8 +147,9 @@ The web app lives in `app/` and uses:
 |---|---|
 | Server | FastAPI + Uvicorn |
 | Templates | Jinja2 |
-| Frontend behavior | JavaScript / static assets |
+| Frontend behavior | HTMX; JavaScript / static assets |
 | Citation graph | D3 |
+| Embedding space visualization | 2D PCA scatter (`embedding-space.js`); 3D cloud (`embedding-cloud.js`, Three.js — implemented, not yet wired into app routes) |
 | Database | Postgres connection pool with `pgvector` registration |
 | External paper graph data | Semantic Scholar API lookups with TTL caching |
 
@@ -159,6 +163,7 @@ Important routes:
 | `GET /paper/{corpus_id}` | Paper detail page |
 | `GET /paper/{corpus_id}/related` | Related papers by title + abstract similarity |
 | `GET /api/paper/{corpus_id}/references` | Reference/citation graph data |
+| `GET /api/embedding-space` | PCA-projected Massimo embedding coordinates for a query and its top results (JSON) |
 | `GET /author` | Author lookup and associated papers |
 
 ---
@@ -167,13 +172,14 @@ Important routes:
 
 ```text
 .
-├── app/                                  # FastAPI app, templates, static JS/CSS, citation graph UI
+├── app/                                  # FastAPI app, templates, static JS/CSS, citation graph, embedding viz
+├── data/                                 # Raw Semantic Scholar snapshot and ingest checkpoint
 ├── database/                             # Canonical Postgres schema, ingest, enrichment, shared pgvector utilities
 ├── papers/                               # Baseline paper search, related-paper retrieval, older ingest helpers
 ├── nomic-embedding/                      # Nomic baseline embedding and query pipeline
-├── massimo-embedding/                    # Weighted segmented embedding notebooks and result files
-├── andrew-embedding/                     # Heterogeneous GNN / HGT training, embedding export, and query path
-├── audrey-embedding/                     # Hyperbolic/Poincaré retrieval pipeline and migration
+├── massimo-embedding/                    # Weighted segmented embedding notebooks (title/abstract/metadata) and evaluation results
+├── andrew-embedding/                     # HGT graph neural network training, embedding export, query path, and autoresearch LLM agent
+├── audrey-embedding/                     # Hyperbolic Poincaré-ball retrieval, schema migration, and index helpers
 ├── evaluation/                           # Benchmark queries, validators, LLM judges, metrics, reports, graphs
 ├── design-system/                        # Design notes for search/results UI
 ├── requirements.txt                      # Python dependencies
@@ -189,7 +195,8 @@ Create and activate a virtual environment, then install dependencies:
 
 ```bash
 python -m venv .venv
-source .venv/bin/activate
+source .venv/bin/activate      # macOS / Linux
+# .venv\Scripts\activate       # Windows
 pip install -r requirements.txt
 ```
 
@@ -206,6 +213,15 @@ Additional variables are required for specific workflows:
 NOMIC_API_KEY="..."   # required for regenerating Nomic embeddings
 S2_API_KEY="..."      # required for Semantic Scholar ingest/enrichment scripts
 OPENAI_API_KEY="..."  # required for LLM-as-judge evaluation
+```
+
+For a fresh database setup, run the following in order after setting env vars:
+
+```bash
+python database/init.py        # create the papers table and indexes
+python database/ingest.py      # fetch ~25,000 CS papers (requires S2_API_KEY)
+python database/enrich.py      # fetch author and reference data (requires S2_API_KEY)
+psql "$POSTGRES_CONN_STRING" -f audrey-embedding/migrations/001_init_hyperbolic.sql
 ```
 
 The app and evaluator expect the `papers` table to be populated and reachable through `POSTGRES_CONN_STRING`.

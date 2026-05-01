@@ -1,3 +1,9 @@
+# Note
+
+This folder contains the first iteration of the research project code, all of which is now deprecated.
+
+---
+
 # Papers Dataset
 
 Academic paper retrieval for the Student Research Helper. Given a text description of a research idea, returns the most semantically similar papers using vector embeddings and nearest-neighbor search.
