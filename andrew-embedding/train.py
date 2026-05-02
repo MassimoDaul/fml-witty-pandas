@@ -402,10 +402,8 @@ def train(autoresearch=False):
             torch.save({
                 \'epoch\': epoch,
                 \'model_state_dict\': model.state_dict(),
-                \'optimizer_state_dict\': optimizer.state_dict(),
                 \'train_loss\': avg_train_loss,
                 \'val_loss\': val_loss,
-                \'corpus_ids\': corpus_ids,
             }, CHECKPOINT_PATH)
             print(f"  [checkpoint saved epoch={epoch} train={avg_train_loss:.4f} val={val_loss:.4f}]")
 
